@@ -28,6 +28,8 @@
   const WIN_SCORE = 21;
   const SETTLE_EPS = 6; // px/s
   const FLASH_MS = 900;
+  const CHARGE_PERIOD_MS = 1100;   // one full 0->100->0 sweep of the power meter
+  const AIM_PREVIEW_LEN = 460;     // fixed logical length of the direction line (power is separate now)
 
   const PLAYER_COLOR = { 1: '#4fd1c5', 2: '#f6ad55' };
   const PLAYER_COLOR_DARK = { 1: '#1f9c8f', 2: '#c97a2c' };
@@ -62,6 +64,15 @@
     return { dist, angle, power: dist / MAX_PULL };
   }
 
+  // The power meter bounces 0 -> 1 -> 0 on a fixed period; both the render
+  // loop (to draw it) and the lock-in tap (to read the value) call this
+  // with the same startTs so what's on screen is exactly what fires.
+  function chargeValue(startTs) {
+    const elapsed = performance.now() - startTs;
+    const t = (elapsed % CHARGE_PERIOD_MS) / CHARGE_PERIOD_MS;
+    return t < 0.5 ? t * 2 : 2 - t * 2;
+  }
+
   function freshState() {
     return {
       p1Name: 'Player 1',
@@ -89,7 +100,8 @@
     canvas: null,
     ctx: null,
     _puckId: 1,
-    _dragging: null,      // {startX,startY,curX,curY}
+    _dragging: null,      // {startX,startY,curX,curY} - drag-to-aim phase
+    _charging: null,      // {angle,startTs} - power meter phase, after aim is locked
     _trails: {},           // puckId -> [{x,y}]
     _confetti: [],
     _confettiTs: 0,
@@ -109,6 +121,8 @@
       this._trails = {};
       this._confetti = [];
       this._prevMatchOver = false;
+      this._dragging = null;
+      this._charging = null;
     },
 
     addLog(msg) {
@@ -117,14 +131,16 @@
     },
 
     // ---- Shooting (authority only) ----
-    shoot(pull) {
+    // aim: {angle, power} - angle in radians (from the drag), power 0..1
+    // (from where the meter was tapped/locked in).
+    shoot(aim) {
       const s = this.state;
       if (s.simulating || s.matchOver) return false;
-      const aim = computeAim(pull.dx, pull.dy);
-      if (aim.dist < 8) return false; // too weak, ignore as a mis-click
+      const power = Math.max(0, Math.min(1, aim.power));
+      if (power < 0.04) return false; // essentially zero, ignore
       // pick speed so the puck's natural friction-limited stopping distance
-      // scales linearly with pull distance (constant deceleration: d = v^2 / 2a)
-      const intendedDistance = aim.dist * DIST_PER_PULL;
+      // scales linearly with power (constant deceleration: d = v^2 / 2a)
+      const intendedDistance = power * MAX_PULL * DIST_PER_PULL;
       const speed = Math.sqrt(2 * FRICTION_DECEL * intendedDistance);
       const owner = s.currentShooter;
       s.pucks.push({
@@ -292,6 +308,16 @@
       }
 
       function down(evt) {
+        // second tap: the power meter is running, lock it in and fire
+        if (self._charging) {
+          evt.preventDefault();
+          const angle = self._charging.angle;
+          const power = chargeValue(self._charging.startTs);
+          self._charging = null;
+          onShoot({ angle, power });
+          return;
+        }
+        // first tap: start dragging to aim
         if (!canShoot()) return;
         evt.preventDefault();
         const pt = toLocal(evt);
@@ -310,10 +336,12 @@
         self._dragging = null;
         const dx = d.curX - d.startX;
         const dy = d.curY - d.startY;
-        // any drag with enough length counts as a shot attempt - direction
-        // (toward the target or pulled back) doesn't matter, see computeAim()
+        // any drag with enough length locks in a direction and starts the
+        // power meter - direction (toward the target or pulled back)
+        // doesn't matter, see computeAim(). Tap again to set the power.
         if (Math.hypot(dx, dy) > 8) {
-          onShoot({ dx, dy });
+          const aim = computeAim(dx, dy);
+          self._charging = { angle: aim.angle, startTs: performance.now() };
         }
       }
 
@@ -420,44 +448,24 @@
         ctx.globalAlpha = 1;
       }
 
-      // aim line + power readout while dragging - matches the real shot exactly
+      // direction line while dragging - fixed length, since power is set
+      // afterward by the meter, not by how far you drag
       if (this._dragging) {
         const owner = s.currentShooter;
         const d = this._dragging;
         const aim = computeAim(d.curX - d.startX, d.curY - d.startY);
-        const travel = aim.dist * DIST_PER_PULL;
-        const lx0 = s.aimX[owner], ly0 = START_Y;
-        const lx1 = lx0 + Math.cos(aim.angle) * travel;
-        const ly1 = ly0 + Math.sin(aim.angle) * travel;
+        drawDirectionLine(ctx, s.aimX[owner], START_Y, aim.angle, AIM_PREVIEW_LEN, PLAYER_COLOR[owner]);
+      }
 
-        ctx.setLineDash([10, 8]);
-        ctx.lineWidth = 3 + aim.power * 3;
-        ctx.strokeStyle = PLAYER_COLOR[owner];
-        ctx.globalAlpha = 0.85;
-        ctx.beginPath();
-        const STEPS = 10;
-        for (let i = 0; i <= STEPS; i++) {
-          const t = i / STEPS;
-          const lx = lx0 + (lx1 - lx0) * t;
-          const ly = ly0 + (ly1 - ly0) * t;
-          const px = toScreenX(lx, ly);
-          if (i === 0) ctx.moveTo(px, ly); else ctx.lineTo(px, ly);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 1;
-
-        const endScale = scaleAtY(ly1);
-        const ex = toScreenX(lx1, ly1);
-        ctx.beginPath();
-        ctx.arc(ex, ly1, 7 * endScale, 0, Math.PI * 2);
-        ctx.fillStyle = PLAYER_COLOR[owner];
-        ctx.fill();
-
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.font = 'bold 18px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${Math.round(aim.power * 100)}%`, toScreenX(lx0, ly0), ly0 + 40);
+      // power meter while charging - direction is locked, bar bounces
+      // 0-100-0 until the player taps again to fire at that power
+      if (this._charging) {
+        const owner = s.currentShooter;
+        const value = chargeValue(this._charging.startTs);
+        drawDirectionLine(ctx, s.aimX[owner], START_Y, this._charging.angle, AIM_PREVIEW_LEN, PLAYER_COLOR[owner], { alpha: 0.5 });
+        const sx = toScreenX(s.aimX[owner], START_Y);
+        const side = s.aimX[owner] > CX ? -1 : 1;
+        drawPowerMeter(ctx, sx + side * 48, START_Y, value, PLAYER_COLOR[owner], PLAYER_COLOR_DARK[owner]);
       }
 
       if (opts.myTurn && !s.simulating && !s.matchOver) {
@@ -536,6 +544,88 @@
     ctx.ellipse(sx, sy - r * 0.35, r * 0.55, r * 0.22, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.32)';
     ctx.fill();
+  }
+
+  // A dashed direction line from (lx0,ly0) a fixed logical length, in the
+  // given angle. Used both for the live drag preview and the locked-in
+  // line during the power-meter phase, so they look identical.
+  function drawDirectionLine(ctx, lx0, ly0, angle, len, color, opts) {
+    opts = opts || {};
+    const lx1 = lx0 + Math.cos(angle) * len;
+    const ly1 = ly0 + Math.sin(angle) * len;
+
+    ctx.setLineDash(opts.dash || [10, 8]);
+    ctx.lineWidth = opts.lineWidth || 4;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = opts.alpha != null ? opts.alpha : 0.85;
+    ctx.beginPath();
+    const STEPS = 10;
+    for (let i = 0; i <= STEPS; i++) {
+      const t = i / STEPS;
+      const px = toScreenX(lx0 + (lx1 - lx0) * t, ly0 + (ly1 - ly0) * t);
+      const py = ly0 + (ly1 - ly0) * t;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    const endScale = scaleAtY(ly1);
+    ctx.beginPath();
+    ctx.arc(toScreenX(lx1, ly1), ly1, 7 * endScale, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // The bouncing strength meter: a vertical bar next to the puck, filled
+  // bottom-up to the current 0..1 value, with a marker line and % label.
+  function drawPowerMeter(ctx, sx, sy, value, color, colorDark) {
+    const w = 24, h = 140;
+    const x0 = sx - w / 2, yBottom = sy + 4, yTop = yBottom - h;
+
+    ctx.fillStyle = 'rgba(10,10,14,0.55)';
+    roundRectPath(ctx, x0, yTop, w, h, 9);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1.5;
+    roundRectPath(ctx, x0, yTop, w, h, 9);
+    ctx.stroke();
+
+    const fillH = h * value;
+    ctx.save();
+    roundRectPath(ctx, x0, yTop, w, h, 9);
+    ctx.clip();
+    const grad = ctx.createLinearGradient(0, yBottom - fillH, 0, yBottom);
+    grad.addColorStop(0, shade(color, 25));
+    grad.addColorStop(1, colorDark);
+    ctx.fillStyle = grad;
+    ctx.fillRect(x0, yBottom - fillH, w, fillH);
+    ctx.restore();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x0 - 4, yBottom - fillH);
+    ctx.lineTo(x0 + w + 4, yBottom - fillH);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${Math.round(value * 100)}%`, sx, yTop - 10);
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText('TAP!', sx, yBottom + 18);
   }
 
   // Bakes the whole table - dark backdrop, picture frame, tapering rails,

@@ -105,7 +105,7 @@
       broadcastState();
     } else if (data.type === 'shoot') {
       if (SB.state.currentShooter === 2 && !SB.state.simulating && !SB.state.matchOver) {
-        SB.shoot(data.pull);
+        SB.shoot({ angle: data.angle, power: data.power });
         broadcastState();
       }
     } else if (data.type === 'nudge') {
@@ -183,11 +183,11 @@
     if (!inputAttached) {
       SB.attachInput({
         canShoot,
-        onShoot: (pull) => {
+        onShoot: (aim) => {
           if (mode === 'client') {
-            Net.send({ type: 'shoot', pull });
+            Net.send({ type: 'shoot', angle: aim.angle, power: aim.power });
           } else {
-            const ok = SB.shoot(pull);
+            const ok = SB.shoot(aim);
             if (ok && mode === 'host') broadcastState();
           }
         }
@@ -248,6 +248,8 @@
         : `It's a tie!`;
     } else if (s.simulating) {
       els.turnStatus.textContent = 'Puck sliding...';
+    } else if (SB._charging) {
+      els.turnStatus.textContent = '💪 Tap the table to set your power!';
     } else {
       const name = s.currentShooter === 1 ? s.p1Name : s.p2Name;
       const isMe = mode === 'practice' || myPlayerId() === s.currentShooter;
