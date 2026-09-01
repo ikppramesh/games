@@ -74,8 +74,8 @@ a{color:var(--accent);}
 }
 #tableCanvas{
   background:var(--wood);
-  border-radius:10px;
-  box-shadow:0 12px 40px rgba(0,0,0,0.45);
+  border-radius:4px;
+  box-shadow:0 16px 44px rgba(0,0,0,0.55);
   width:auto;
   height:auto;
   max-width:100%;
@@ -94,6 +94,7 @@ a{color:var(--accent);}
 .panel{
   flex:0 0 300px;
   align-self:center;
+  min-height:0;
   max-height:100%;
   overflow-y:auto;
   background:var(--panel);
@@ -108,15 +109,60 @@ a{color:var(--accent);}
 @media (max-width: 780px), (max-aspect-ratio: 4/5){
   .layout{
     flex-direction:column;
-    padding:10px 14px;
-    gap:10px;
+    padding:8px 12px;
+    gap:8px;
   }
   .board-wrap{
     flex:1 1 auto;
+    min-height:0;
+    max-height:44%;
+    gap:4px;
+  }
+  .hint{
+    font-size:0.7rem;
   }
   .panel{
-    flex:0 1 auto;
+    flex:1 1 0;
+    min-height:0;
     width:100%;
+    padding:12px;
+    gap:8px;
+  }
+  .panel h2{
+    font-size:0.95rem;
+  }
+  .scoreboard{
+    gap:8px;
+  }
+  .score-card{
+    padding:8px;
+  }
+  .score-card .score{
+    font-size:1.3rem;
+  }
+  .score-card .name{
+    font-size:0.72rem;
+  }
+  #turnStatus{
+    padding:7px;
+    font-size:0.85rem;
+    min-height:0;
+  }
+  .aim-controls button{
+    width:38px;
+    height:38px;
+    font-size:1rem;
+  }
+  .zone-legend{
+    font-size:0.68rem;
+  }
+  #log{
+    height:56px;
+    font-size:0.7rem;
+  }
+  .secondary-btn{
+    padding:7px;
+    font-size:0.8rem;
   }
 }
 .panel h2{
