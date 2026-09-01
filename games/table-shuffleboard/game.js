@@ -33,12 +33,12 @@
   const PLAYER_COLOR_DARK = { 1: '#1f9c8f', 2: '#c97a2c' };
   const CONFETTI_COLORS = ['#4fd1c5', '#f6ad55', '#f4d35e', '#e05263', '#ffffff'];
 
-  // --- one-point perspective: the lane is full width at the near/shooter
-  // end (y=H) and tapers toward FAR_SCALE width at the far end (y=0),
-  // centered on CX. Only x is warped; y stays 1:1 with logical space. ---
+  // Table is drawn flat/normal (no perspective taper) - FAR_SCALE=1 makes
+  // scaleAtY()/toScreenX() a no-op identity transform, so all the geometry
+  // below (rails, zones, pucks) just renders as a plain rectangle.
   const CX = W / 2;
-  const FAR_SCALE = 0.5;
-  const RAIL_TOP = 16; // where the lane visually starts, near the top frame
+  const FAR_SCALE = 1;
+  const RAIL_TOP = 16; // small margin between the picture frame and the rails
   function scaleAtY(y) { return FAR_SCALE + (1 - FAR_SCALE) * (y / H); }
   function toScreenX(x, y) { return CX + (x - CX) * scaleAtY(y); }
   function toLogicalX(sx, y) { return CX + (sx - CX) / scaleAtY(y); }
