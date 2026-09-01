@@ -1,6 +1,7 @@
 (function () {
   const canvas = document.getElementById('tableCanvas');
   SB.init(canvas);
+  SB.render({ myTurn: false }); // draw the empty table immediately, before any game starts
 
   const els = {
     setupPanel: document.getElementById('setupPanel'),
