@@ -12,19 +12,24 @@
   --wood-dark:#6b4423;
 }
 *{box-sizing:border-box;}
+html, body{height:100%;}
 body{
   margin:0;
-  min-height:100vh;
+  height:100dvh;
+  overflow:hidden;
   background:radial-gradient(circle at 20% 0%, #1c2b3a 0%, var(--bg) 60%);
   color:var(--text);
   font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  display:flex;
+  flex-direction:column;
 }
 a{color:var(--accent);}
 .topbar{
+  flex:0 0 auto;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:14px 22px;
+  padding:10px 22px;
   border-bottom:1px solid #223244;
 }
 .topbar .back{
@@ -37,45 +42,82 @@ a{color:var(--accent);}
   margin:0;
 }
 .layout{
+  flex:1 1 auto;
+  min-height:0;
   display:flex;
-  flex-wrap:wrap;
-  gap:24px;
-  padding:24px;
+  flex-wrap:nowrap;
+  gap:20px;
+  padding:14px 22px;
   max-width:1180px;
+  width:100%;
   margin:0 auto;
-  align-items:flex-start;
+  align-items:stretch;
   justify-content:center;
 }
 .board-wrap{
+  flex:1 1 auto;
+  min-width:0;
+  min-height:0;
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:10px;
+  justify-content:center;
+  gap:6px;
+}
+.canvas-frame{
+  flex:1 1 auto;
+  min-height:0;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 #tableCanvas{
   background:var(--wood);
   border-radius:10px;
   box-shadow:0 12px 40px rgba(0,0,0,0.45);
-  max-width:100%;
+  width:auto;
   height:auto;
+  max-width:100%;
+  max-height:100%;
+  aspect-ratio:2 / 3;
   touch-action:none;
   cursor:crosshair;
 }
 .hint{
+  flex:0 0 auto;
   color:var(--muted);
-  font-size:0.85rem;
+  font-size:0.8rem;
   text-align:center;
   max-width:520px;
 }
 .panel{
+  flex:0 0 300px;
+  align-self:center;
+  max-height:100%;
+  overflow-y:auto;
   background:var(--panel);
   border:1px solid #223244;
   border-radius:14px;
-  padding:20px;
-  width:320px;
+  padding:18px;
+  width:300px;
   display:flex;
   flex-direction:column;
-  gap:16px;
+  gap:14px;
+}
+@media (max-width: 780px), (max-aspect-ratio: 4/5){
+  .layout{
+    flex-direction:column;
+    padding:10px 14px;
+    gap:10px;
+  }
+  .board-wrap{
+    flex:1 1 auto;
+  }
+  .panel{
+    flex:0 1 auto;
+    width:100%;
+  }
 }
 .panel h2{
   margin:0;

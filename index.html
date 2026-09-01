@@ -14,51 +14,58 @@
     --muted:#8ea0b3;
   }
   *{box-sizing:border-box;}
+  html, body{height:100%;}
   body{
     margin:0;
-    min-height:100vh;
+    height:100dvh;
+    overflow:hidden;
     background:radial-gradient(circle at 20% 0%, #1c2b3a 0%, var(--bg) 60%);
     color:var(--text);
     font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:48px 20px 80px;
+    justify-content:center;
+    gap:clamp(16px, 3.5vh, 40px);
+    padding:clamp(14px, 3vh, 40px) 20px;
   }
   header{
     text-align:center;
-    margin-bottom:48px;
+    flex:0 0 auto;
   }
   h1{
-    font-size:2.4rem;
+    font-size:clamp(1.5rem, 4vh, 2.4rem);
     margin:0 0 8px;
     letter-spacing:0.5px;
   }
   header p{
     color:var(--muted);
     margin:0;
-    font-size:1.05rem;
+    font-size:clamp(0.85rem, 1.8vh, 1.05rem);
   }
   .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
-    gap:24px;
+    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    gap:clamp(12px, 2vh, 24px);
     width:100%;
     max-width:920px;
+    flex:0 1 auto;
+    min-height:0;
   }
   .card{
     background:var(--panel);
     border-radius:16px;
-    padding:26px;
+    padding:clamp(16px, 2.4vh, 26px);
     border:1px solid #223244;
     display:flex;
     flex-direction:column;
-    gap:10px;
+    gap:8px;
     text-decoration:none;
     color:var(--text);
     transition:transform 0.15s ease, border-color 0.15s ease;
     position:relative;
     overflow:hidden;
+    min-height:0;
   }
   .card.live{
     cursor:pointer;
@@ -72,16 +79,16 @@
     cursor:default;
   }
   .emoji{
-    font-size:2.2rem;
+    font-size:clamp(1.6rem, 3.2vh, 2.2rem);
   }
   .card h2{
     margin:0;
-    font-size:1.3rem;
+    font-size:clamp(1.05rem, 2vh, 1.3rem);
   }
   .card p{
     margin:0;
     color:var(--muted);
-    font-size:0.92rem;
+    font-size:clamp(0.8rem, 1.6vh, 0.92rem);
     line-height:1.4;
   }
   .badge{
@@ -105,9 +112,9 @@
     border:1px solid rgba(142,160,179,0.3);
   }
   footer{
-    margin-top:64px;
+    flex:0 0 auto;
     color:var(--muted);
-    font-size:0.85rem;
+    font-size:clamp(0.75rem, 1.6vh, 0.85rem);
     text-align:center;
   }
 </style>
