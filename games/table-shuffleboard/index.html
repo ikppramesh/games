@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Table Shuffleboard</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../../index.html">&larr; Game Room</a>
+    <h1>🧊 Table Shuffleboard</h1>
+    <span style="width:80px"></span>
+  </div>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <canvas id="tableCanvas" width="640" height="960"></canvas>
+      <div class="hint">Click and drag back from your puck like a slingshot, then release to shoot. Use ◀ ▶ to change your starting lane.</div>
+    </div>
+
+    <!-- Setup panel: shown before a game starts -->
+    <div class="panel" id="setupPanel">
+      <h2>Play</h2>
+      <div class="setup-tabs">
+        <button class="tab-btn active" data-tab="host">Create Game</button>
+        <button class="tab-btn" data-tab="join">Join Game</button>
+        <button class="tab-btn" data-tab="practice">Practice</button>
+      </div>
+
+      <div id="hostPanel" class="setup-panel">
+        <label for="hostName">Your name</label>
+        <input type="text" id="hostName" maxlength="16" placeholder="Player 1" />
+        <button class="primary-btn" id="createBtn">Create Room</button>
+        <div class="room-code-box" id="roomCodeBox" hidden>
+          <div class="sub">Share this code or link with your opponent</div>
+          <div class="code" id="roomCodeText">-----</div>
+          <div class="link-row">
+            <input type="text" id="roomLink" readonly />
+            <button id="copyLinkBtn">Copy</button>
+          </div>
+        </div>
+        <p class="hint" id="hostStatusMsg" style="margin-top:10px;"></p>
+      </div>
+
+      <div id="joinPanel" class="setup-panel" hidden>
+        <label for="joinName">Your name</label>
+        <input type="text" id="joinName" maxlength="16" placeholder="Player 2" />
+        <label for="joinCode">Room code</label>
+        <input type="text" id="joinCode" maxlength="8" placeholder="e.g. AB12C" style="text-transform:uppercase" />
+        <button class="primary-btn" id="joinBtn">Join Room</button>
+      </div>
+
+      <div id="practicePanel" class="setup-panel" hidden>
+        <p class="hint" style="margin:4px 0 0;">Play both sides yourself on this device &mdash; useful for trying the game before inviting a friend.</p>
+        <button class="primary-btn" id="practiceBtn">Start Practice Game</button>
+      </div>
+    </div>
+
+    <!-- In-game panel: shown once a match is running -->
+    <div class="panel" id="gamePanel" hidden>
+      <h2>Table Shuffleboard</h2>
+      <div class="scoreboard">
+        <div class="score-card p1" id="p1Card">
+          <div class="name" id="p1NameEl">Player 1</div>
+          <div class="score" id="p1ScoreEl">0</div>
+        </div>
+        <div class="score-card p2" id="p2Card">
+          <div class="name" id="p2NameEl">Player 2</div>
+          <div class="score" id="p2ScoreEl">0</div>
+        </div>
+      </div>
+      <div class="meta-row">
+        <span id="roundLabel">Round 1</span>
+        <span id="pucksLeftLabel">4 pucks left</span>
+      </div>
+      <div id="turnStatus">Waiting...</div>
+      <div class="aim-controls">
+        <button id="laneLeftBtn">◀</button>
+        <button id="laneRightBtn">▶</button>
+      </div>
+      <div class="zone-legend">
+        <span><i class="dot" style="background:#e05263"></i>10</span>
+        <span><i class="dot" style="background:#f6ad55"></i>8</span>
+        <span><i class="dot" style="background:#f4d35e"></i>7</span>
+      </div>
+      <div id="log"></div>
+      <button class="secondary-btn" id="leaveBtn">Leave Game</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="game.js"></script>
+  <script src="net.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

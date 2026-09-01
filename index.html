@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ramesh's Game Room</title>
+<style>
+  :root{
+    --bg:#0f1720;
+    --panel:#17222e;
+    --accent:#4fd1c5;
+    --accent2:#f6ad55;
+    --text:#e8eef4;
+    --muted:#8ea0b3;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:radial-gradient(circle at 20% 0%, #1c2b3a 0%, var(--bg) 60%);
+    color:var(--text);
+    font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:48px 20px 80px;
+  }
+  header{
+    text-align:center;
+    margin-bottom:48px;
+  }
+  h1{
+    font-size:2.4rem;
+    margin:0 0 8px;
+    letter-spacing:0.5px;
+  }
+  header p{
+    color:var(--muted);
+    margin:0;
+    font-size:1.05rem;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+    gap:24px;
+    width:100%;
+    max-width:920px;
+  }
+  .card{
+    background:var(--panel);
+    border-radius:16px;
+    padding:26px;
+    border:1px solid #223244;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    text-decoration:none;
+    color:var(--text);
+    transition:transform 0.15s ease, border-color 0.15s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .card.live{
+    cursor:pointer;
+  }
+  .card.live:hover{
+    transform:translateY(-4px);
+    border-color:var(--accent);
+  }
+  .card.soon{
+    opacity:0.55;
+    cursor:default;
+  }
+  .emoji{
+    font-size:2.2rem;
+  }
+  .card h2{
+    margin:0;
+    font-size:1.3rem;
+  }
+  .card p{
+    margin:0;
+    color:var(--muted);
+    font-size:0.92rem;
+    line-height:1.4;
+  }
+  .badge{
+    position:absolute;
+    top:16px;
+    right:16px;
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    padding:4px 10px;
+    border-radius:999px;
+  }
+  .badge.live{
+    background:rgba(79,209,197,0.15);
+    color:var(--accent);
+    border:1px solid rgba(79,209,197,0.4);
+  }
+  .badge.soon{
+    background:rgba(142,160,179,0.12);
+    color:var(--muted);
+    border:1px solid rgba(142,160,179,0.3);
+  }
+  footer{
+    margin-top:64px;
+    color:var(--muted);
+    font-size:0.85rem;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🎲 Ramesh's Game Room</h1>
+    <p>Browser games you can play online with a friend &mdash; no installs, just share a link.</p>
+  </header>
+
+  <div class="grid">
+    <a class="card live" href="games/table-shuffleboard/index.html">
+      <span class="badge live">Live</span>
+      <span class="emoji">🧊</span>
+      <h2>Table Shuffleboard</h2>
+      <p>Slide your weights down the table and knock your opponent's off the scoring zones. Play online with a room code.</p>
+    </a>
+
+    <div class="card soon">
+      <span class="badge soon">Coming soon</span>
+      <span class="emoji">♟️</span>
+      <h2>Chess</h2>
+      <p>Classic chess, online with a friend.</p>
+    </div>
+
+    <div class="card soon">
+      <span class="badge soon">Coming soon</span>
+      <span class="emoji">🏠</span>
+      <h2>Monopoly / Indian Business</h2>
+      <p>Buy, trade and bankrupt your friends.</p>
+    </div>
+
+    <div class="card soon">
+      <span class="badge soon">Coming soon</span>
+      <span class="emoji">❌⭕</span>
+      <h2>Tic Tac Toe</h2>
+      <p>Quick and simple, online with a friend.</p>
+    </div>
+  </div>
+
+  <footer>
+    More games are added over time &mdash; check back soon.
+  </footer>
+</body>
+</html>
