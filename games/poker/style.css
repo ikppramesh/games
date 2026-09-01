@@ -1,0 +1,339 @@
+:root{
+  --bg:#0f1720;
+  --panel:#17222e;
+  --panel-2:#1e2c3a;
+  --accent:#4fd1c5;
+  --accent2:#f6ad55;
+  --text:#e8eef4;
+  --muted:#8ea0b3;
+  --felt:#0b5c3f;
+}
+*{box-sizing:border-box;}
+html, body{height:100%;}
+body{
+  margin:0;
+  height:100dvh;
+  overflow:hidden;
+  background:radial-gradient(circle at 20% 0%, #1c2b3a 0%, var(--bg) 60%);
+  color:var(--text);
+  font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  display:flex;
+  flex-direction:column;
+}
+a{color:var(--accent);}
+.topbar{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 22px;
+  border-bottom:1px solid #223244;
+}
+.topbar .back{
+  color:var(--muted);
+  text-decoration:none;
+  font-size:0.9rem;
+}
+.topbar h1{
+  font-size:1.15rem;
+  margin:0;
+}
+.layout{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-wrap:nowrap;
+  gap:20px;
+  padding:14px 22px;
+  max-width:1320px;
+  width:100%;
+  margin:0 auto;
+  align-items:stretch;
+  justify-content:center;
+}
+.board-wrap{
+  flex:1 1 auto;
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.canvas-frame{
+  flex:1 1 auto;
+  min-height:0;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#tableCanvas{
+  background:var(--felt);
+  border-radius:10px;
+  box-shadow:0 16px 44px rgba(0,0,0,0.55);
+  width:auto;
+  height:auto;
+  max-width:100%;
+  max-height:100%;
+  aspect-ratio:900 / 620;
+  touch-action:none;
+}
+.hint{
+  flex:0 0 auto;
+  color:var(--muted);
+  font-size:0.8rem;
+  text-align:center;
+  max-width:600px;
+}
+.panel{
+  flex:0 0 320px;
+  align-self:center;
+  min-height:0;
+  max-height:100%;
+  overflow-y:auto;
+  background:var(--panel);
+  border:1px solid #223244;
+  border-radius:14px;
+  padding:18px;
+  width:320px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.panel h2{
+  margin:0;
+  font-size:1.05rem;
+}
+.setup-tabs{
+  display:flex;
+  gap:8px;
+}
+.tab-btn{
+  flex:1;
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #2c3d50;
+  background:var(--panel-2);
+  color:var(--text);
+  cursor:pointer;
+  font-size:0.85rem;
+}
+.tab-btn.active{
+  border-color:var(--accent);
+  color:var(--accent);
+}
+.setup-panel label{
+  display:block;
+  font-size:0.8rem;
+  color:var(--muted);
+  margin-bottom:4px;
+  margin-top:10px;
+}
+input[type="text"]{
+  width:100%;
+  padding:9px 10px;
+  border-radius:8px;
+  border:1px solid #2c3d50;
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:0.95rem;
+}
+input[type="range"]{
+  width:100%;
+  accent-color:var(--accent);
+}
+button{
+  cursor:pointer;
+  font-family:inherit;
+}
+.primary-btn{
+  width:100%;
+  padding:11px;
+  margin-top:14px;
+  border-radius:8px;
+  border:none;
+  background:var(--accent);
+  color:#0f1720;
+  font-weight:600;
+  font-size:0.95rem;
+}
+.primary-btn:hover{filter:brightness(1.08);}
+.primary-btn:disabled{opacity:0.4; cursor:not-allowed;}
+.secondary-btn{
+  width:100%;
+  padding:9px;
+  border-radius:8px;
+  border:1px solid #2c3d50;
+  background:transparent;
+  color:var(--text);
+  font-size:0.85rem;
+}
+#hostPanel[hidden], #joinPanel[hidden], #practicePanel[hidden]{display:none;}
+.room-code-box{
+  margin-top:14px;
+  padding:12px;
+  background:var(--panel-2);
+  border-radius:8px;
+  text-align:center;
+}
+.room-code-box .code{
+  font-size:1.5rem;
+  letter-spacing:4px;
+  font-weight:700;
+  color:var(--accent);
+}
+.room-code-box .sub{
+  font-size:0.75rem;
+  color:var(--muted);
+  margin-top:4px;
+}
+.sub{
+  font-size:0.75rem;
+  color:var(--muted);
+}
+.link-row{
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+}
+.link-row input{
+  flex:1;
+  font-size:0.75rem;
+}
+.link-row button{
+  padding:0 12px;
+  border-radius:8px;
+  border:1px solid #2c3d50;
+  background:var(--panel-2);
+  color:var(--accent);
+}
+.lobby-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin:8px 0;
+}
+.lobby-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:7px 10px;
+  background:var(--panel-2);
+  border-radius:8px;
+  font-size:0.85rem;
+}
+.lobby-row .bot-tag{
+  font-size:0.7rem;
+  color:var(--muted);
+}
+
+/* in-game HUD */
+#handStatus{
+  font-size:0.85rem;
+  color:var(--muted);
+}
+#turnStatus{
+  text-align:center;
+  padding:10px;
+  border-radius:8px;
+  background:var(--panel-2);
+  font-size:0.92rem;
+  min-height:20px;
+}
+#log{
+  flex:1 1 auto;
+  min-height:60px;
+  overflow-y:auto;
+  background:var(--panel-2);
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:0.76rem;
+  color:var(--muted);
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+#gamePanel[hidden], #setupPanel[hidden], .action-bar[hidden], .raise-row[hidden]{display:none;}
+
+/* action bar (betting controls under the table) */
+.action-bar{
+  flex:0 0 auto;
+  width:100%;
+  max-width:640px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  background:var(--panel);
+  border:1px solid #223244;
+  border-radius:12px;
+  padding:10px 14px;
+}
+.pot-info{
+  text-align:center;
+  font-size:0.85rem;
+  color:var(--accent2);
+  font-weight:600;
+}
+.action-buttons{
+  display:flex;
+  gap:8px;
+}
+.act-btn{
+  flex:1;
+  padding:11px;
+  border-radius:9px;
+  border:none;
+  font-weight:700;
+  font-size:0.95rem;
+  color:#0f1720;
+}
+.act-btn.fold{background:#e05263; color:#fff;}
+.act-btn.check{background:var(--accent);}
+.act-btn.bet{background:var(--accent2);}
+.act-btn:disabled{opacity:0.35; cursor:not-allowed;}
+.raise-row{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.raise-amount{
+  text-align:center;
+  font-weight:700;
+  font-size:1.1rem;
+  color:var(--accent2);
+}
+.quick-bets{
+  display:flex;
+  gap:6px;
+}
+.quick-btn{
+  flex:1;
+  padding:7px;
+  border-radius:7px;
+  border:1px solid #2c3d50;
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:0.78rem;
+}
+
+@media (max-width: 900px), (max-aspect-ratio: 6/5){
+  .layout{
+    flex-direction:column;
+    padding:8px 12px;
+    gap:8px;
+  }
+  .board-wrap{
+    flex:1 1 auto;
+    max-height:62%;
+  }
+  .panel{
+    flex:1 1 0;
+    width:100%;
+    padding:12px;
+    gap:8px;
+  }
+  .hint{ font-size:0.7rem; }
+  #log{ min-height:40px; }
+}

@@ -9,6 +9,7 @@ Play it live via GitHub Pages (once enabled for this repo): `https://ikppramesh.
 | Game | Status | Path |
 |---|---|---|
 | 🧊 Table Shuffleboard | Live | [`games/table-shuffleboard/`](games/table-shuffleboard/) |
+| ♠️ Texas Hold'em Poker | Live | [`games/poker/`](games/poker/) |
 | ♟️ Chess | Planned | — |
 | 🏠 Monopoly / Indian Business | Planned | — |
 | ❌⭕ Tic Tac Toe | Planned | — |
@@ -22,6 +23,8 @@ These games are static HTML/JS/CSS — no backend server to run or pay for. Onli
 3. Player B clicks **Join Game** and enters the code — the two browsers form a direct peer-to-peer connection and the match starts.
 
 PeerJS's free public broker is only used to help the two browsers find each other; once connected, game moves travel directly between the two players' devices.
+
+Poker extends this to a host + up to 5 guests (one table, up to 6 seats) instead of 1-on-1 - the host runs the game and relays a personalized view to each guest (so nobody sees anyone else's hole cards until showdown). Both games also have a practice/solo mode against computer-controlled opponents.
 
 ## Running locally
 

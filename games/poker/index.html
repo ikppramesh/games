@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Texas Hold'em Poker</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../../index.html">&larr; Game Room</a>
+    <h1>♠️ Texas Hold'em</h1>
+    <span style="width:80px"></span>
+  </div>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <div class="canvas-frame">
+        <canvas id="tableCanvas" width="900" height="620"></canvas>
+      </div>
+      <div class="action-bar" id="actionBar" hidden>
+        <div class="pot-info" id="potInfo">Pot: 0</div>
+        <div class="action-buttons">
+          <button class="act-btn fold" id="foldBtn">Fold</button>
+          <button class="act-btn check" id="checkCallBtn">Check</button>
+          <button class="act-btn bet" id="betRaiseBtn">Bet</button>
+        </div>
+        <div class="raise-row" id="raiseRow" hidden>
+          <input type="range" id="raiseSlider" min="0" max="100" value="0" />
+          <div class="raise-amount" id="raiseAmount">0</div>
+          <div class="quick-bets">
+            <button class="quick-btn" id="quickHalfPot">&frac12; Pot</button>
+            <button class="quick-btn" id="quickPot">Pot</button>
+            <button class="quick-btn" id="quickAllIn">All-In</button>
+          </div>
+        </div>
+      </div>
+      <div class="hint" id="tableHint">Waiting for the game to start&hellip;</div>
+    </div>
+
+    <!-- Setup panel: shown before a game starts -->
+    <div class="panel" id="setupPanel">
+      <h2>Play Poker</h2>
+      <div class="setup-tabs">
+        <button class="tab-btn active" data-tab="host">Create Game</button>
+        <button class="tab-btn" data-tab="join">Join Game</button>
+        <button class="tab-btn" data-tab="practice">Practice</button>
+      </div>
+
+      <div id="hostPanel" class="setup-panel">
+        <label for="hostName">Your name</label>
+        <input type="text" id="hostName" maxlength="16" placeholder="Player 1" />
+        <button class="primary-btn" id="createBtn">Create Table</button>
+        <div class="room-code-box" id="roomCodeBox" hidden>
+          <div class="sub">Share this code or link with friends</div>
+          <div class="code" id="roomCodeText">-----</div>
+          <div class="link-row">
+            <input type="text" id="roomLink" readonly />
+            <button id="copyLinkBtn">Copy</button>
+          </div>
+        </div>
+        <div id="lobbyBox" hidden>
+          <div class="sub" style="margin-top:14px;">Seated (<span id="lobbyCount">0</span>/6)</div>
+          <div id="lobbyList" class="lobby-list"></div>
+          <button class="secondary-btn" id="addBotBtn">+ Add Computer Player</button>
+          <button class="primary-btn" id="startTableBtn" disabled>Start Game</button>
+        </div>
+      </div>
+
+      <div id="joinPanel" class="setup-panel" hidden>
+        <label for="joinName">Your name</label>
+        <input type="text" id="joinName" maxlength="16" placeholder="Player 2" />
+        <label for="joinCode">Table code</label>
+        <input type="text" id="joinCode" maxlength="8" placeholder="e.g. AB12C" style="text-transform:uppercase" />
+        <button class="primary-btn" id="joinBtn">Join Table</button>
+        <p class="hint" id="joinStatusMsg" style="margin-top:10px;"></p>
+      </div>
+
+      <div id="practicePanel" class="setup-panel" hidden>
+        <p class="hint" style="margin:4px 0 0;">Play against the computer &mdash; useful for trying the game before inviting friends.</p>
+        <label for="botCount">Computer opponents</label>
+        <input type="range" id="botCount" min="1" max="5" value="3" />
+        <div class="sub" id="botCountLabel" style="text-align:center;">3 opponents</div>
+        <button class="primary-btn" id="practiceBtn">Start Practice Game</button>
+      </div>
+    </div>
+
+    <!-- In-game panel -->
+    <div class="panel" id="gamePanel" hidden>
+      <h2>Texas Hold'em</h2>
+      <div id="handStatus">Hand #0</div>
+      <div id="turnStatus">Waiting...</div>
+      <div id="log"></div>
+      <button class="secondary-btn" id="leaveBtn">Leave Table</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="poker.js"></script>
+  <script src="net.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
