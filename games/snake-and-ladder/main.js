@@ -406,24 +406,19 @@
     const dx = x1 - x0, dy = y1 - y0;
     const len = Math.hypot(dx, dy);
     const nx = -dy / len, ny = dx / len;
-    const amp = Math.min(22, len * 0.12);
-    const segments = 7;
+    const wiggle = Math.min(30, len * 0.22);
+    const mid1 = { x: x0 + dx * 0.33 + nx * wiggle, y: y0 + dy * 0.33 + ny * wiggle };
+    const mid2 = { x: x0 + dx * 0.66 - nx * wiggle, y: y0 + dy * 0.66 - ny * wiggle };
 
     ctx.strokeStyle = '#7c3aed';
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 7;
     ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
     ctx.beginPath();
     ctx.moveTo(x0, y0);
-    for (let i = 1; i < segments; i++) {
-      const t = i / segments;
-      const side = i % 2 === 0 ? 1 : -1;
-      ctx.lineTo(x0 + dx * t + nx * amp * side, y0 + dy * t + ny * amp * side);
-    }
-    ctx.lineTo(x1, y1);
+    ctx.bezierCurveTo(mid1.x, mid1.y, mid2.x, mid2.y, x1, y1);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(61,220,114,0.5)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(61,220,114,0.55)';
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
     drawJokerFace(x0, y0);
