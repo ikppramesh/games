@@ -2,7 +2,9 @@
 
 A small collection of browser games you can play online with a friend — just open a link, no installs, no accounts.
 
-Play it live via GitHub Pages (once enabled for this repo): `https://ikppramesh.github.io/games/`
+Play it live:
+- GitHub Pages: `https://ikppramesh.github.io/games/`
+- Vercel: [https://irgames.vercel.app/](https://irgames.vercel.app/)
 
 ## Games
 
