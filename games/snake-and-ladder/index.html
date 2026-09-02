@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Snakes & Ladders: Gotham</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../../index.html">&larr; Game Room</a>
+    <h1><span class="bat-emoji">🦇</span> Snakes &amp; Ladders: Gotham</h1>
+    <span style="width:80px"></span>
+  </div>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <div class="canvas-frame">
+        <canvas id="boardCanvas" width="760" height="760"></canvas>
+      </div>
+      <div class="dice-bar" id="diceBar" hidden>
+        <div class="dice" id="dice" data-face="1">
+          <div class="pip tl"></div><div class="pip tc"></div><div class="pip tr"></div>
+          <div class="pip ml"></div><div class="pip mc"></div><div class="pip mr"></div>
+          <div class="pip bl"></div><div class="pip bc"></div><div class="pip br"></div>
+        </div>
+        <button class="primary-btn roll-btn" id="rollBtn">Roll the Batarang Die</button>
+      </div>
+      <div class="hint" id="boardHint">Climb the grapple lines, dodge the Joker's snakes, reach square 100 to save Gotham.</div>
+    </div>
+
+    <!-- Setup panel -->
+    <div class="panel" id="setupPanel">
+      <h2>Join the Fight</h2>
+      <div class="setup-tabs">
+        <button class="tab-btn active" data-tab="host">Create Game</button>
+        <button class="tab-btn" data-tab="join">Join Game</button>
+        <button class="tab-btn" data-tab="practice">Practice</button>
+      </div>
+
+      <div id="hostPanel" class="setup-panel">
+        <label for="hostName">Your name</label>
+        <input type="text" id="hostName" maxlength="16" placeholder="Batman" />
+        <button class="primary-btn" id="createBtn">Create Table</button>
+        <div class="room-code-box" id="roomCodeBox" hidden>
+          <div class="sub">Share this code or link with friends</div>
+          <div class="code" id="roomCodeText">-----</div>
+          <div class="link-row">
+            <input type="text" id="roomLink" readonly />
+            <button id="copyLinkBtn">Copy</button>
+          </div>
+        </div>
+        <div id="lobbyBox" hidden>
+          <div class="sub" style="margin-top:14px;">Seated (<span id="lobbyCount">0</span>/4)</div>
+          <div id="lobbyList" class="lobby-list"></div>
+          <button class="secondary-btn" id="addBotBtn">+ Add Computer Player</button>
+          <button class="primary-btn" id="startTableBtn" disabled>Start Game</button>
+        </div>
+      </div>
+
+      <div id="joinPanel" class="setup-panel" hidden>
+        <label for="joinName">Your name</label>
+        <input type="text" id="joinName" maxlength="16" placeholder="Robin" />
+        <label for="joinCode">Table code</label>
+        <input type="text" id="joinCode" maxlength="8" placeholder="e.g. AB12C" style="text-transform:uppercase" />
+        <button class="primary-btn" id="joinBtn">Join Table</button>
+        <p class="hint" id="joinStatusMsg" style="margin-top:10px;"></p>
+      </div>
+
+      <div id="practicePanel" class="setup-panel" hidden>
+        <p class="hint" style="margin:4px 0 0;">Play against the computer &mdash; no waiting for friends.</p>
+        <label for="botCount">Computer opponents</label>
+        <input type="range" id="botCount" min="1" max="3" value="2" />
+        <div class="sub" id="botCountLabel" style="text-align:center;">2 opponents</div>
+        <button class="primary-btn" id="practiceBtn">Start Practice Game</button>
+      </div>
+    </div>
+
+    <!-- In-game panel -->
+    <div class="panel" id="gamePanel" hidden>
+      <h2>Snakes &amp; Ladders</h2>
+      <div id="turnStatus">Waiting...</div>
+      <div id="standings" class="lobby-list"></div>
+      <div id="log"></div>
+      <button class="secondary-btn" id="leaveBtn">Leave Table</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="game.js"></script>
+  <script src="net.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

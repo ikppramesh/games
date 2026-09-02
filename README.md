@@ -12,6 +12,7 @@ Play it live:
 |---|---|---|
 | 🧊 Table Shuffleboard | Live | [`games/table-shuffleboard/`](games/table-shuffleboard/) |
 | ♠️ Texas Hold'em Poker | Live | [`games/poker/`](games/poker/) |
+| 🦇 Snakes & Ladders: Gotham | Live | [`games/snake-and-ladder/`](games/snake-and-ladder/) |
 | ♟️ Chess | Planned | — |
 | 🏠 Monopoly / Indian Business | Planned | — |
 | ❌⭕ Tic Tac Toe | Planned | — |
@@ -26,7 +27,7 @@ These games are static HTML/JS/CSS — no backend server to run or pay for. Onli
 
 PeerJS's free public broker is only used to help the two browsers find each other; once connected, game moves travel directly between the two players' devices.
 
-Poker extends this to a host + up to 5 guests (one table, up to 6 seats) instead of 1-on-1 - the host runs the game and relays a personalized view to each guest (so nobody sees anyone else's hole cards until showdown). Both games also have a practice/solo mode against computer-controlled opponents.
+Poker and Snakes & Ladders extend this to a host + several guests (one table, up to 6 seats for poker, 4 for snakes & ladders) instead of 1-on-1 - the host runs the game and broadcasts state to every guest (personalized per-viewer for poker, so nobody sees anyone else's hole cards until showdown). All three games also have a practice/solo mode against computer-controlled opponents.
 
 ## Running locally
 
