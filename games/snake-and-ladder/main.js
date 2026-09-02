@@ -400,51 +400,116 @@
     }
   }
 
-  function drawSnake(x0, y0, x1, y1) {
+  // A jagged purple/green "Joker's trick" trail instead of a snake, capped
+  // with a small Joker face badge at the head (high) square.
+  function drawJokerTrail(x0, y0, x1, y1) {
     const dx = x1 - x0, dy = y1 - y0;
     const len = Math.hypot(dx, dy);
     const nx = -dy / len, ny = dx / len;
-    const wiggle = Math.min(30, len * 0.22);
-    const mid1 = { x: x0 + dx * 0.33 + nx * wiggle, y: y0 + dy * 0.33 + ny * wiggle };
-    const mid2 = { x: x0 + dx * 0.66 - nx * wiggle, y: y0 + dy * 0.66 - ny * wiggle };
+    const amp = Math.min(22, len * 0.12);
+    const segments = 7;
 
-    ctx.strokeStyle = '#2fae63';
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth = 6;
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.beginPath();
     ctx.moveTo(x0, y0);
-    ctx.bezierCurveTo(mid1.x, mid1.y, mid2.x, mid2.y, x1, y1);
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const side = i % 2 === 0 ? 1 : -1;
+      ctx.lineTo(x0 + dx * t + nx * amp * side, y0 + dy * t + ny * amp * side);
+    }
+    ctx.lineTo(x1, y1);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(61,220,114,0.5)';
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // head at x0,y0 (the higher/head square)
-    ctx.fillStyle = '#238a4b';
-    ctx.beginPath();
-    ctx.arc(x0, y0, 9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(x0 - 3, y0 - 3, 1.6, 0, Math.PI * 2);
-    ctx.arc(x0 + 3, y0 - 3, 1.6, 0, Math.PI * 2);
-    ctx.fill();
+    drawJokerFace(x0, y0);
   }
 
-  function drawToken(x, y, color, isMe) {
+  function drawJokerFace(cx, cy) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+    ctx.fillStyle = '#f4f1ea';
+    ctx.fill();
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#3ddc72';
+    ctx.beginPath();
+    ctx.moveTo(cx - 9, cy - 6); ctx.lineTo(cx - 13, cy - 13); ctx.lineTo(cx - 5, cy - 9); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + 9, cy - 6); ctx.lineTo(cx + 13, cy - 13); ctx.lineTo(cx + 5, cy - 9); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#e0264f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy + 1, 5, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.arc(cx - 3.5, cy - 2, 1.2, 0, Math.PI * 2);
+    ctx.arc(cx + 3.5, cy - 2, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // A little Batmobile silhouette for each player's token instead of a
+  // plain colored disc: low sleek body, tail fin, cockpit glass, wheels.
+  function drawBatmobile(cx, cy, size, color, isMe) {
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 6;
     ctx.shadowOffsetY = 2;
+    ctx.translate(cx, cy);
+    const s = size / 20;
+    ctx.scale(s, s);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
-    ctx.arc(x, y, 13, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.ellipse(0, 9, 15, 3.4, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
-    ctx.lineWidth = isMe ? 3 : 2;
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(-16, 4);
+    ctx.bezierCurveTo(-16, -2, -12, -6, -6, -6);
+    ctx.bezierCurveTo(-4, -10, 4, -10, 6, -6);
+    ctx.bezierCurveTo(12, -6, 16, -2, 16, 4);
+    ctx.bezierCurveTo(16, 7, 12, 8, 8, 8);
+    ctx.lineTo(-8, 8);
+    ctx.bezierCurveTo(-12, 8, -16, 7, -16, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = isMe ? 1.6 : 1;
     ctx.strokeStyle = isMe ? '#fff' : 'rgba(0,0,0,0.5)';
     ctx.stroke();
-    drawBat(x, y, 13, '#14120a');
+
+    // tail fin
+    ctx.beginPath();
+    ctx.moveTo(14, 1); ctx.lineTo(21, -4); ctx.lineTo(16, 3); ctx.closePath();
+    ctx.fill();
+
+    // cockpit glass
+    ctx.fillStyle = 'rgba(190,225,255,0.75)';
+    ctx.beginPath();
+    ctx.moveTo(-5, -6); ctx.lineTo(-2, -9); ctx.lineTo(4, -9); ctx.lineTo(5, -6); ctx.closePath();
+    ctx.fill();
+
+    // wheels
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.arc(-9, 8, 3, 0, Math.PI * 2);
+    ctx.arc(9, 8, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawToken(x, y, color, isMe) {
+    drawBatmobile(x, y, 26, color, isMe);
   }
 
   function render() {
@@ -493,17 +558,17 @@
     ctx.lineWidth = 2.5;
     ctx.strokeRect(MARGIN, MARGIN, BOARD, BOARD);
 
-    // ladders then snakes
-    Object.entries(SNL.LADDERS).forEach(([from, to]) => {
+    if (!state) return;
+
+    // ladders then Joker traps - each game has its own random layout
+    Object.entries(state.ladders || {}).forEach(([from, to]) => {
       const a = squareCenter(Number(from)), b = squareCenter(to);
       drawLadder(a.x, a.y, b.x, b.y);
     });
-    Object.entries(SNL.SNAKES).forEach(([from, to]) => {
+    Object.entries(state.jokers || {}).forEach(([from, to]) => {
       const a = squareCenter(Number(from)), b = squareCenter(to);
-      drawSnake(a.x, a.y, b.x, b.y);
+      drawJokerTrail(a.x, a.y, b.x, b.y);
     });
-
-    if (!state) return;
 
     // tokens, offset within a cell if several share a square
     const bySquare = {};

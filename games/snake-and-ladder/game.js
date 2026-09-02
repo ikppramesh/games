@@ -17,11 +17,9 @@
   const BOARD_SIZE = 100;
   const MAX_PLAYERS = 4;
   const SIX_STREAK_BUST = 3;
-
-  // classic-style layout, hand-picked so no square is used twice across
-  // either set (no chained snake-into-ladder surprises)
-  const LADDERS = { 2: 23, 8: 34, 20: 41, 28: 76, 40: 59, 50: 69, 63: 81, 71: 91 };
-  const SNAKES = { 17: 4, 19: 7, 54: 32, 62: 18, 64: 60, 87: 24, 93: 68, 95: 42, 99: 78 };
+  const LADDER_COUNT = 8;
+  const JOKER_COUNT = 8;
+  const MIN_GAP = 6; // shortest allowed rise/drop for a ladder or joker trap
 
   const TOKEN_COLORS = ['#f6c93b', '#4fd1c5', '#e05263', '#a78bfa'];
   const TOKEN_NAMES = ['Batman', 'Robin', 'Batgirl', 'Nightwing'];
@@ -34,20 +32,63 @@
     return { row, col };
   }
 
+  // Every new table gets its own random layout - ladders (climb up) and
+  // Joker traps (slide down) - so the board is different each game/refresh.
+  // No square is ever reused across heads/tails/bottoms/tops, so nothing
+  // chains into another feature.
+  function generateBoard(rng) {
+    rng = rng || Math.random;
+    const used = new Set([1, BOARD_SIZE]);
+    const ladders = {};
+    const jokers = {};
+
+    function randInt(min, max) { return min + Math.floor(rng() * (max - min + 1)); }
+
+    function tryAddLadder() {
+      for (let attempt = 0; attempt < 200; attempt++) {
+        const bottom = randInt(2, 90);
+        if (used.has(bottom) || bottom + MIN_GAP > 99) continue;
+        const top = randInt(bottom + MIN_GAP, 99);
+        if (used.has(top)) continue;
+        used.add(bottom); used.add(top);
+        ladders[bottom] = top;
+        return;
+      }
+    }
+    function tryAddJoker() {
+      for (let attempt = 0; attempt < 200; attempt++) {
+        const head = randInt(11, 99);
+        if (used.has(head) || head - MIN_GAP < 2) continue;
+        const tail = randInt(2, head - MIN_GAP);
+        if (used.has(tail)) continue;
+        used.add(head); used.add(tail);
+        jokers[head] = tail;
+        return;
+      }
+    }
+
+    for (let i = 0; i < LADDER_COUNT; i++) tryAddLadder();
+    for (let i = 0; i < JOKER_COUNT; i++) tryAddJoker();
+    return { ladders, jokers };
+  }
+
   function newPlayer(id, name, isBot, color) {
     return { id, name, isBot: !!isBot, color, pos: 0, active: true, connected: true };
   }
 
   function newTable() {
+    const board = generateBoard();
     return {
       players: [],
       currentIndex: 0,
       stage: 'waiting',   // waiting | playing | finished
       winner: null,
       lastRoll: null,
-      lastEvent: null,     // {type:'ladder'|'snake', from, to} for the most recent move, for animation
+      lastEvent: null,     // {type:'ladder'|'joker'|'bust', from, to} for the most recent move, for animation
       sixStreak: 0,
       turnNumber: 0,
+      ladders: board.ladders,
+      jokers: board.jokers,
       log: []
     };
   }
@@ -139,16 +180,16 @@
       addLog(t, `${player.name} rolls a ${roll} - needs an exact count, stays on ${before}.`);
     } else {
       player.pos = target;
-      if (LADDERS[target]) {
-        const to = LADDERS[target];
-        addLog(t, `${player.name} rolls a ${roll} and climbs a ladder: ${target} → ${to}!`);
+      if (t.ladders[target]) {
+        const to = t.ladders[target];
+        addLog(t, `${player.name} rolls a ${roll} and climbs a grapple line: ${target} → ${to}!`);
         player.pos = to;
         event = { type: 'ladder', from: target, to };
-      } else if (SNAKES[target]) {
-        const to = SNAKES[target];
-        addLog(t, `${player.name} rolls a ${roll} and is caught by a snake: ${target} → ${to}!`);
+      } else if (t.jokers[target]) {
+        const to = t.jokers[target];
+        addLog(t, `${player.name} rolls a ${roll} and falls for the Joker's trick: ${target} → ${to}!`);
         player.pos = to;
-        event = { type: 'snake', from: target, to };
+        event = { type: 'joker', from: target, to };
       } else {
         addLog(t, `${player.name} rolls a ${roll}, now on square ${target}.`);
       }
@@ -178,12 +219,14 @@
       lastRoll: t.lastRoll,
       lastEvent: t.lastEvent,
       turnNumber: t.turnNumber,
+      ladders: t.ladders,
+      jokers: t.jokers,
       log: t.log.slice(-10)
     };
   }
 
   return {
-    BOARD_SIZE, MAX_PLAYERS, LADDERS, SNAKES, TOKEN_COLORS, TOKEN_NAMES,
-    squareToRowCol, newTable, addPlayer, removePlayer, startGame, rollDice, serialize, addLog
+    BOARD_SIZE, MAX_PLAYERS, TOKEN_COLORS, TOKEN_NAMES,
+    squareToRowCol, generateBoard, newTable, addPlayer, removePlayer, startGame, rollDice, serialize, addLog
   };
 });
