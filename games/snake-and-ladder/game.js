@@ -18,8 +18,9 @@
   const MAX_PLAYERS = 4;
   const SIX_STREAK_BUST = 3;
   const LADDER_COUNT = 8;
-  const JOKER_COUNT = 8;
-  const MIN_GAP = 6; // shortest allowed rise/drop for a ladder or joker trap
+  const SNAKE_COUNT = 8;
+  const MIN_GAP = 6;   // shortest allowed rise/drop for a ladder or snake
+  const MAX_SPAN = 35; // longest - keeps the board readable instead of a tangle
 
   const TOKEN_COLORS = ['#f6c93b', '#4fd1c5', '#e05263', '#a78bfa'];
   const TOKEN_NAMES = ['Batman', 'Robin', 'Batgirl', 'Nightwing'];
@@ -33,43 +34,63 @@
   }
 
   // Every new table gets its own random layout - ladders (climb up) and
-  // Joker traps (slide down) - so the board is different each game/refresh.
+  // snakes (slide down) - so the board is different each game/refresh.
   // No square is ever reused across heads/tails/bottoms/tops, so nothing
   // chains into another feature.
   function generateBoard(rng) {
     rng = rng || Math.random;
     const used = new Set([1, BOARD_SIZE]);
     const ladders = {};
-    const jokers = {};
+    const snakes = {};
+    const ladderSegs = [], snakeSegs = [];
 
     function randInt(min, max) { return min + Math.floor(rng() * (max - min + 1)); }
+    const rowOf = (n) => Math.floor((n - 1) / 10);
+    const pt = (n) => { const { row, col } = squareToRowCol(n); return { x: col, y: row }; };
+
+    // Keeps the board readable, like a printed one: every ladder/snake spans
+    // at least one full row (none lie sideways), doesn't reach too far
+    // across, and ladders never cross ladders, nor snakes cross snakes
+    // (snakes crossing ladders is fine).
+    function crosses(a, b, c, d) {
+      const o = (p, q, r) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x));
+      return o(a, b, c) * o(a, b, d) < 0 && o(c, d, a) * o(c, d, b) < 0;
+    }
+    function fits(lo, hi, segs) {
+      if (rowOf(lo) === rowOf(hi)) return false;
+      const a = pt(lo), b = pt(hi);
+      if (Math.abs(a.x - b.x) > 4) return false;
+      return !segs.some(([c, d]) => crosses(a, b, c, d));
+    }
 
     function tryAddLadder() {
-      for (let attempt = 0; attempt < 200; attempt++) {
+      for (let attempt = 0; attempt < 400; attempt++) {
         const bottom = randInt(2, 90);
         if (used.has(bottom) || bottom + MIN_GAP > 99) continue;
-        const top = randInt(bottom + MIN_GAP, 99);
-        if (used.has(top)) continue;
+        const top = randInt(bottom + MIN_GAP, Math.min(99, bottom + MAX_SPAN));
+        if (used.has(top) || !fits(bottom, top, ladderSegs)) continue;
         used.add(bottom); used.add(top);
         ladders[bottom] = top;
+        ladderSegs.push([pt(bottom), pt(top)]);
         return;
       }
     }
-    function tryAddJoker() {
-      for (let attempt = 0; attempt < 200; attempt++) {
+    function tryAddSnake() {
+      for (let attempt = 0; attempt < 400; attempt++) {
         const head = randInt(11, 99);
         if (used.has(head) || head - MIN_GAP < 2) continue;
-        const tail = randInt(2, head - MIN_GAP);
-        if (used.has(tail)) continue;
+        const tail = randInt(Math.max(2, head - MAX_SPAN), head - MIN_GAP);
+        if (used.has(tail) || !fits(tail, head, snakeSegs)) continue;
         used.add(head); used.add(tail);
-        jokers[head] = tail;
+        snakes[head] = tail;
+        snakeSegs.push([pt(tail), pt(head)]);
         return;
       }
     }
 
     for (let i = 0; i < LADDER_COUNT; i++) tryAddLadder();
-    for (let i = 0; i < JOKER_COUNT; i++) tryAddJoker();
-    return { ladders, jokers };
+    for (let i = 0; i < SNAKE_COUNT; i++) tryAddSnake();
+    return { ladders, snakes };
   }
 
   function newPlayer(id, name, isBot, color) {
@@ -84,11 +105,13 @@
       stage: 'waiting',   // waiting | playing | finished
       winner: null,
       lastRoll: null,
-      lastEvent: null,     // {type:'ladder'|'joker'|'bust', from, to} for the most recent move, for animation
+      lastEvent: null,     // {type:'ladder'|'snake'|'bust', from, to} for the most recent move
+      lastMove: null,      // {seq, playerId, from, landed, to, event} - drives the move animation
+      moveSeq: 0,
       sixStreak: 0,
       turnNumber: 0,
       ladders: board.ladders,
-      jokers: board.jokers,
+      snakes: board.snakes,
       log: []
     };
   }
@@ -164,6 +187,7 @@
         t.sixStreak = 0;
         addLog(t, `${player.name} rolled three 6s in a row - sent back to start!`);
         t.lastEvent = { type: 'bust', from, to: 0 };
+        t.lastMove = { seq: ++t.moveSeq, playerId, from, landed: from, to: 0, event: t.lastEvent };
         advanceTurn(t);
         return { roll, bust: true };
       }
@@ -185,11 +209,11 @@
         addLog(t, `${player.name} rolls a ${roll} and climbs a grapple line: ${target} → ${to}!`);
         player.pos = to;
         event = { type: 'ladder', from: target, to };
-      } else if (t.jokers[target]) {
-        const to = t.jokers[target];
-        addLog(t, `${player.name} rolls a ${roll} and falls for the Joker's trick: ${target} → ${to}!`);
+      } else if (t.snakes[target]) {
+        const to = t.snakes[target];
+        addLog(t, `${player.name} rolls a ${roll} and is swallowed by a snake: ${target} → ${to}!`);
         player.pos = to;
-        event = { type: 'joker', from: target, to };
+        event = { type: 'snake', from: target, to };
       } else {
         addLog(t, `${player.name} rolls a ${roll}, now on square ${target}.`);
       }
@@ -203,6 +227,7 @@
     }
 
     t.lastEvent = event;
+    t.lastMove = { seq: ++t.moveSeq, playerId, from: before, landed: target > BOARD_SIZE ? before : target, to: player.pos, event };
     const extraTurn = roll === 6 && !won;
     if (!won && !extraTurn) advanceTurn(t);
     else if (!won && extraTurn) addLog(t, `${player.name} rolled a 6 - go again!`);
@@ -218,9 +243,10 @@
       winner: t.winner,
       lastRoll: t.lastRoll,
       lastEvent: t.lastEvent,
+      lastMove: t.lastMove,
       turnNumber: t.turnNumber,
       ladders: t.ladders,
-      jokers: t.jokers,
+      snakes: t.snakes,
       log: t.log.slice(-10)
     };
   }
