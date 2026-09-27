@@ -4,12 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 <title>IR Hold'em Poker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="topbar">
     <a class="back" href="../../index.html">&larr; Game Room</a>
-    <h1>♠️ IR Hold'em</h1>
+    <h1><span id="roomIcon">♠️</span> IR Hold'em <span class="room-name" id="roomTitle"></span></h1>
     <button class="rk-toggle" id="rankingsToggle" type="button">Hand Rankings</button>
   </div>
 
@@ -42,6 +44,13 @@
     <!-- Setup panel: shown before a game starts -->
     <div class="panel" id="setupPanel">
       <h2>Play Poker</h2>
+      <div class="room-picker">
+        <div class="rp-label">Choose your room</div>
+        <div class="rooms" id="roomsGrid"></div>
+        <div class="rp-label high">High Roller Suite</div>
+        <div class="rooms high" id="highGrid"></div>
+        <p class="room-note" id="roomNote"></p>
+      </div>
       <div class="setup-tabs">
         <button class="tab-btn active" data-tab="host">Create Game</button>
         <button class="tab-btn" data-tab="join">Join Game</button>
@@ -97,6 +106,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="rooms.js"></script>
   <script src="poker.js"></script>
   <script src="render.js"></script>
   <script src="rankings.js"></script>

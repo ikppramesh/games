@@ -144,18 +144,22 @@
     };
   }
 
-  function newTable() {
+  // opts: {room, startChips, smallBlind, bigBlind} - defaults are the General room
+  function newTable(opts) {
+    opts = opts || {};
     return {
       players: [],           // seated, in seat order
       dealerSeat: -1,
-      smallBlind: SMALL_BLIND, bigBlind: BIG_BLIND,
+      room: opts.room || 'general',
+      startChips: opts.startChips || STARTING_CHIPS,
+      smallBlind: opts.smallBlind || SMALL_BLIND, bigBlind: opts.bigBlind || BIG_BLIND,
       deck: [],
       community: [],
       pot: 0,
       pots: [],               // resolved side pots (only populated at showdown)
       stage: 'waiting',        // waiting | preflop | flop | turn | river | showdown
       currentBet: 0,
-      minRaise: BIG_BLIND,
+      minRaise: opts.bigBlind || BIG_BLIND,
       actingId: null,
       pendingActions: 0,
       handNumber: 0,
@@ -189,7 +193,7 @@
     if (t.players.length >= MAX_SEATS) return null;
     if (t.players.some(p => p.id === id)) return t.players.find(p => p.id === id);
     const seat = t.players.length;
-    const p = newPlayer(id, name, STARTING_CHIPS, seat, isBot);
+    const p = newPlayer(id, name, t.startChips || STARTING_CHIPS, seat, isBot);
     t.players.push(p);
     addLog(t, `${name} joined the table.`);
     return p;
@@ -481,6 +485,7 @@
   function serializeFor(t, viewerId) {
     return {
       stage: t.stage,
+      room: t.room,
       dealerSeat: t.dealerSeat,
       smallBlind: t.smallBlind, bigBlind: t.bigBlind,
       community: t.community.slice(),

@@ -32,6 +32,18 @@
   ];
   const CHIP = { r: 10, ry: 5.6, t: 2.8, maxPerStack: 8 };
 
+  // the room being drawn (rooms.js): table, cards and chip scale all follow it
+  let T = global.PokerRooms.get('general');
+  let chipMult = 1; // chip values are the General set scaled to the room's stakes
+  function setRoom(id) {
+    const next = global.PokerRooms.get(id);
+    if (next === T) return;
+    T = next;
+    chipMult = T.start / 1000;
+    bgLayer = null;
+    sprites.clear();
+  }
+
   let DPR = 1;          // device pixels per CSS pixel
   let RES = 1;          // device pixels per design unit (DPR * view scale)
   let VIEW = { s: 1, ox: 0, oy: 0, cw: BASE_W, ch: H };
@@ -175,7 +187,8 @@
     return t + '…';
   }
 
-  function fmt(n) { return '\u20b9' + Number(n || 0).toLocaleString('en-IN'); }
+  // money on the table: lakh / crore short forms keep big stakes readable
+  function fmt(n) { return global.PokerRooms.inr(n, true); }
 
   // ---------- static background: room, rail, trim, felt, lighting ----------
   function buildBackground() {
@@ -188,9 +201,9 @@
 
     // the room - dark and warm, lit from a lamp over the table
     const room = c.createRadialGradient(CX, CY - 40, 60, CX, CY, 640);
-    room.addColorStop(0, '#3b2a1e');
-    room.addColorStop(0.55, '#1a120c');
-    room.addColorStop(1, '#060403');
+    room.addColorStop(0, T.table.room[0]);
+    room.addColorStop(0.55, T.table.room[1]);
+    room.addColorStop(1, T.table.room[2]);
     c.fillStyle = room;
     c.fillRect(...full);
     texture(c, noiseCanvas(128, 91, 60), 0.35, 'overlay');
@@ -210,9 +223,10 @@
     c.beginPath(); ellipse(c, RAIL); ellipse(c, TRIM);
     c.clip('evenodd');
     const leather = c.createLinearGradient(0, CY - RAIL.ry, 0, CY + RAIL.ry);
-    leather.addColorStop(0, '#4d2e1d');
-    leather.addColorStop(0.5, '#2d180e');
-    leather.addColorStop(1, '#190c05');
+    const RL = T.table.rail;
+    leather.addColorStop(0, RL.grad[0]);
+    leather.addColorStop(0.5, RL.grad[1]);
+    leather.addColorStop(1, RL.grad[2]);
     c.fillStyle = leather;
     c.fillRect(0, 0, W, H);
     // tube shading: dark where the padding curves away, lit on the crown
@@ -223,13 +237,13 @@
       c.beginPath();
       c.ellipse(CX, CY, lerp(TRIM.rx, RAIL.rx, t), lerp(TRIM.ry, RAIL.ry, t), 0, 0, Math.PI * 2);
       c.lineWidth = 2.2;
-      c.strokeStyle = `rgba(0,0,0,${(0.6 * Math.pow(1 - hump, 2)).toFixed(3)})`;
+      c.strokeStyle = `rgba(0,0,0,${((RL.light ? 0.35 : 0.6) * Math.pow(1 - hump, 2)).toFixed(3)})`;
       c.stroke();
     }
     const sheen = c.createLinearGradient(0, CY - RAIL.ry, 0, CY + RAIL.ry);
-    sheen.addColorStop(0, 'rgba(255,226,190,0.55)');
-    sheen.addColorStop(0.4, 'rgba(255,226,190,0.10)');
-    sheen.addColorStop(1, 'rgba(255,226,190,0.03)');
+    sheen.addColorStop(0, `rgba(${RL.sheen},0.55)`);
+    sheen.addColorStop(0.4, `rgba(${RL.sheen},0.10)`);
+    sheen.addColorStop(1, `rgba(${RL.sheen},0.03)`);
     c.strokeStyle = sheen;
     for (let k = 0; k < 6; k++) {
       c.globalAlpha = 0.22;
@@ -250,7 +264,7 @@
       const e = inset > 0 ? RAIL : TRIM;
       c.strokeStyle = 'rgba(0,0,0,0.55)';
       c.beginPath(); c.ellipse(CX, CY + 0.8, e.rx - inset, e.ry - inset, 0, 0, Math.PI * 2); c.stroke();
-      c.strokeStyle = 'rgba(222,186,138,0.5)';
+      c.strokeStyle = RL.stitch;
       c.beginPath(); c.ellipse(CX, CY, e.rx - inset, e.ry - inset, 0, 0, Math.PI * 2); c.stroke();
     }
     c.restore();
@@ -263,16 +277,13 @@
     c.save();
     c.beginPath(); ellipse(c, TRIM); ellipse(c, FELT);
     c.clip('evenodd');
+    const TR = T.table.trim;
     const wood = c.createLinearGradient(CX - TRIM.rx, 0, CX + TRIM.rx, 0);
-    wood.addColorStop(0, '#5a3312');
-    wood.addColorStop(0.22, '#8f5d2c');
-    wood.addColorStop(0.5, '#6d4119');
-    wood.addColorStop(0.78, '#9c6734');
-    wood.addColorStop(1, '#5a3312');
+    [0, 0.22, 0.5, 0.78, 1].forEach((p, i) => wood.addColorStop(p, TR.stops[i]));
     c.fillStyle = wood;
     c.fillRect(0, 0, W, H);
     const r = rng(42);
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < (TR.kind === 'wood' ? 90 : 0); i++) {
       const t = r();
       const a0 = r() * Math.PI * 2, len = 0.2 + r() * 1.3;
       c.beginPath();
@@ -297,29 +308,36 @@
     c.strokeStyle = 'rgba(255,232,195,0.28)';
     c.lineWidth = 1;
     c.stroke();
+    if (TR.inlay) {
+      c.beginPath(); ellipse(c, TRIM, (TRIM.rx - FELT.rx) / 2);
+      c.strokeStyle = TR.inlay;
+      c.lineWidth = 1.6;
+      c.stroke();
+    }
 
     // felt
     c.save();
     c.beginPath(); ellipse(c, FELT);
     c.clip();
     const felt = c.createRadialGradient(CX, CY - 40, 20, CX, CY, FELT.rx);
-    felt.addColorStop(0, '#26965f');
-    felt.addColorStop(0.55, '#177a4a');
-    felt.addColorStop(1, '#0a4d2f');
+    felt.addColorStop(0, T.table.felt[0]);
+    felt.addColorStop(0.55, T.table.felt[1]);
+    felt.addColorStop(1, T.table.felt[2]);
     c.fillStyle = felt;
     c.fillRect(0, 0, W, H);
     texture(c, noiseCanvas(256, 3, 80), 0.28, 'overlay');
     texture(c, noiseCanvas(48, 11, 40), 0.10, 'overlay');
     // printed betting line + logo
     c.beginPath(); ellipse(c, { rx: FELT.rx - 58, ry: FELT.ry - 50 });
-    c.strokeStyle = 'rgba(255,232,160,0.17)';
+    c.strokeStyle = T.table.line;
     c.lineWidth = 1.5;
     c.stroke();
-    c.fillStyle = 'rgba(255,232,160,0.16)';
-    c.font = `600 15px ${SERIF}`;
+    if (T.table.deco || T.table.filigree) drawFeltDecor(c);
+    c.fillStyle = T.table.logoColor;
+    c.font = `600 ${T.table.deco || T.table.filigree ? 18 : 15}px ${SERIF}`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('I R   H O L D ’ E M', CX, CY + 76);
+    c.fillText(T.table.logo, CX, CY + 76);
     c.font = `italic 11px ${SERIF}`;
     c.fillText('♠  ♥  ♦  ♣', CX, CY + 96);
     // the rail throws a soft shadow onto the felt
@@ -337,8 +355,8 @@
     c.save();
     c.globalCompositeOperation = 'screen';
     const lamp = c.createRadialGradient(CX, CY - 70, 20, CX, CY - 20, 520);
-    lamp.addColorStop(0, 'rgba(255,236,190,0.17)');
-    lamp.addColorStop(0.5, 'rgba(255,236,190,0.04)');
+    lamp.addColorStop(0, `rgba(${T.table.lamp},0.17)`);
+    lamp.addColorStop(0.5, `rgba(${T.table.lamp},0.04)`);
     lamp.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = lamp;
     c.fillRect(...full);
@@ -350,6 +368,39 @@
     c.fillRect(...full);
 
     return canvas;
+  }
+
+  // art-deco fans (Royale) or gold filigree scrolls (Elite) printed on the felt
+  function drawFeltDecor(c) {
+    c.save();
+    c.strokeStyle = T.table.line;
+    c.lineWidth = 1;
+    if (T.table.deco) {
+      for (const side of [-1, 1]) {
+        const x = CX + side * (FELT.rx - 120), y = CY + 30;
+        for (let i = 0; i < 7; i++) {
+          const a = -Math.PI / 2 + (i - 3) * 0.28;
+          c.beginPath();
+          c.moveTo(x, y + 30);
+          c.lineTo(x + Math.cos(a) * 60, y + 30 + Math.sin(a) * 60);
+          c.stroke();
+        }
+        c.beginPath(); c.arc(x, y + 30, 60, -Math.PI * 0.5 - 0.9, -Math.PI * 0.5 + 0.9); c.stroke();
+        c.beginPath(); c.arc(x, y + 30, 40, -Math.PI * 0.5 - 0.9, -Math.PI * 0.5 + 0.9); c.stroke();
+      }
+      c.beginPath(); ellipse(c, { rx: FELT.rx - 20, ry: FELT.ry - 16 }); c.stroke();
+    } else {
+      c.beginPath(); ellipse(c, { rx: FELT.rx - 18, ry: FELT.ry - 14 }); c.stroke();
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const x = CX + Math.cos(a) * (FELT.rx - 32), y = CY + Math.sin(a) * (FELT.ry - 26);
+        c.beginPath();
+        c.arc(x, y, 6, a, a + Math.PI * 1.4);
+        c.arc(x + Math.cos(a + 1.6) * 9, y + Math.sin(a + 1.6) * 9, 3.5, a + Math.PI, a + Math.PI * 2.4);
+        c.stroke();
+      }
+    }
+    c.restore();
   }
 
   // ---------- suits (vector, so they never fall back to emoji glyphs) ----------
@@ -397,9 +448,14 @@
   // flushes stay easy to read without breaking the theme.
   const METALS = {
     gold: ['#fff2bf', '#ecc65e', '#b8892a', '#f5d67f'],
-    rose: ['#ffe0cf', '#eea683', '#b86b4a', '#f6bea0']
+    rose: ['#ffe0cf', '#eea683', '#b86b4a', '#f6bea0'],
+    silver: ['#ffffff', '#c9d1da', '#7f8a96', '#e6ebf0'],
+    ice: ['#f2fbff', '#8fd3ff', '#2f82bd', '#c6ebff']
   };
-  function toneOf(suit) { return isRed(suit) ? 'rose' : 'gold'; }
+  // the room's ink for a suit: a colour or a metal tone
+  function toneOf(suit) { return T.cards.ink[isRed(suit) ? 'red' : 'black']; }
+  // fill style for a colour-or-metal spec across a box
+  function ink(c, spec, x0, y0, x1, y1) { return METALS[spec] ? metal(c, spec, x0, y0, x1, y1) : spec; }
 
   // brushed-metal gradient across a box
   function metal(c, tone, x0, y0, x1, y1) {
@@ -439,33 +495,36 @@
   function cardBase(c, w, h) {
     const r = Math.max(3, w * 0.08);
     roundRect(c, 0.5, 0.5, w - 1, h - 1, r);
+    const F = T.cards;
     const g = c.createLinearGradient(0, 0, w, h);
-    g.addColorStop(0, '#2b2b2f');
-    g.addColorStop(0.45, '#121214');
-    g.addColorStop(1, '#050506');
+    g.addColorStop(0, F.face[0]);
+    g.addColorStop(0.45, F.face[1]);
+    g.addColorStop(1, F.face[2]);
     c.fillStyle = g;
     c.fill();
-    // glossy lacquer sheen
+    // glossy lacquer / foil sheen
     c.save();
     c.clip();
     const sheen = c.createLinearGradient(0, 0, w * 0.7, h * 0.7);
-    sheen.addColorStop(0, 'rgba(255,255,255,0.13)');
-    sheen.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+    sheen.addColorStop(0, `rgba(255,255,255,${F.sheen})`);
+    sheen.addColorStop(0.5, `rgba(255,255,255,${F.sheen * 0.25})`);
     sheen.addColorStop(1, 'rgba(255,255,255,0)');
     c.fillStyle = sheen;
     c.fillRect(0, 0, w, h);
     c.restore();
     c.lineWidth = 1;
-    c.strokeStyle = 'rgba(214,176,92,0.6)';
+    c.strokeStyle = F.edge;
     c.stroke();
     return r;
   }
 
   // thin gold rule just inside the edge
   function innerBorder(c, w, h, r, tone) {
+    const spec = T.cards.inner === 'suit' ? tone : T.cards.inner;
+    if (!spec) return;
     const m = Math.max(2, w * 0.045);
     roundRect(c, m, m, w - 2 * m, h - 2 * m, Math.max(1.5, r * 0.6));
-    c.strokeStyle = metal(c, tone, 0, 0, w, h);
+    c.strokeStyle = ink(c, spec, 0, 0, w, h);
     c.lineWidth = 0.7;
     c.stroke();
   }
@@ -491,9 +550,9 @@
       c.lineTo(x + cw / 2, y + ch / 2);
     }
     c.closePath();
-    c.fillStyle = metal(c, 'gold', x - cw / 2, y - ch / 2, x + cw / 2, y + ch / 2);
+    c.fillStyle = ink(c, T.cards.court.crown, x - cw / 2, y - ch / 2, x + cw / 2, y + ch / 2);
     c.fill();
-    c.fillStyle = '#0b0b0c';
+    c.fillStyle = T.cards.court.jewel;
     for (const dx of [-cw / 4, 0, cw / 4]) {
       c.beginPath();
       c.arc(x + dx, y + ch * 0.25, Math.max(0.8, cw * 0.06), 0, Math.PI * 2);
@@ -512,7 +571,7 @@
     if (w < 42) {
       // compact style for small opponent cards: big index + big suit
       c.font = `bold ${Math.round(h * 0.32)}px ${SERIF}`;
-      c.fillStyle = metal(c, tone, 0, h * 0.08, 0, h * 0.34);
+      c.fillStyle = ink(c, tone, 0, h * 0.08, 0, h * 0.34);
       fitText(c, label, w * 0.32, h * 0.34, w * 0.46);
       drawSuit(c, card.suit, w * 0.32, h * 0.49, h * 0.17);
       drawSuit(c, card.suit, w * 0.63, h * 0.73, h * 0.34);
@@ -524,7 +583,7 @@
       c.save();
       if (flip) { c.translate(w, h); c.rotate(Math.PI); }
       c.font = `bold ${Math.round(h * 0.18)}px ${SERIF}`;
-      c.fillStyle = metal(c, tone, 0, h * 0.05, 0, h * 0.21);
+      c.fillStyle = ink(c, tone, 0, h * 0.05, 0, h * 0.21);
       fitText(c, label, w * 0.16, h * 0.21, w * 0.18);
       drawSuit(c, card.suit, w * 0.16, h * 0.3, h * 0.095);
       c.restore();
@@ -534,11 +593,12 @@
       drawSuit(c, card.suit, w / 2, h / 2, h * (card.suit === 'S' ? 0.44 : 0.36));
     } else if (card.rank >= 11) {
       const fx = w * 0.25, fy = h * 0.16, fw = w * 0.5, fh = h * 0.68;
-      const trim = metal(c, tone, fx, fy, fx + fw, fy + fh);
+      const CT = T.cards.court;
+      const trim = ink(c, CT[isRed(card.suit) ? 'trimRed' : 'trimBlack'], fx, fy, fx + fw, fy + fh);
       roundRect(c, fx, fy, fw, fh, 2);
       const fg = c.createLinearGradient(fx, fy, fx + fw, fy + fh);
-      fg.addColorStop(0, '#26221a');
-      fg.addColorStop(1, '#0c0b08');
+      fg.addColorStop(0, CT.bg[0]);
+      fg.addColorStop(1, CT.bg[1]);
       c.fillStyle = fg;
       c.fill();
       c.lineWidth = 0.9;
@@ -552,7 +612,7 @@
         if (flip) { c.translate(w, h); c.rotate(Math.PI); }
         crown(c, w / 2, fy + fh * 0.15, fw * 0.5, fh * 0.14, card.rank, '#0b0b0c');
         c.font = `bold ${Math.round(fh * 0.27)}px ${SERIF}`;
-        c.fillStyle = metal(c, tone, 0, fy + fh * 0.24, 0, fy + fh * 0.46);
+        c.fillStyle = ink(c, CT[isRed(card.suit) ? 'trimRed' : 'trimBlack'], 0, fy + fh * 0.24, 0, fy + fh * 0.46);
         c.fillText(label, w / 2, fy + fh * 0.46);
         c.restore();
       }
@@ -575,31 +635,65 @@
   }
 
   function paintBack(c, w, h) {
+    const B = T.cards.back;
     const r = cardBase(c, w, h);
     const m = Math.max(2.5, w * 0.08);
+    if (B.border) {
+      roundRect(c, 0.5, 0.5, w - 1, h - 1, r);
+      c.fillStyle = B.border;
+      c.fill();
+    }
     c.save();
     roundRect(c, m, m, w - 2 * m, h - 2 * m, r * 0.6);
+    const g = c.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, B.base[0]);
+    g.addColorStop(1, B.base[1]);
+    c.fillStyle = g;
+    c.fill();
     c.clip();
-    c.strokeStyle = 'rgba(214,176,92,0.3)';
+    c.strokeStyle = B.patternColor;
+    c.fillStyle = B.patternColor;
     c.lineWidth = 0.6;
     const step = Math.max(4, w * 0.13);
-    c.beginPath();
-    for (let i = -h; i < w + h; i += step) {
-      c.moveTo(i, 0); c.lineTo(i + h, h);
-      c.moveTo(i, h); c.lineTo(i + h, 0);
+    if (B.pattern === 'pinstripe') {
+      c.beginPath();
+      for (let x = m; x < w; x += step * 0.45) { c.moveTo(x, 0); c.lineTo(x, h); }
+      c.stroke();
+    } else if (B.pattern === 'damask') {
+      for (let y = m; y < h; y += step * 1.1) {
+        for (let x = m + ((y / step) % 2 ? step * 0.55 : 0); x < w; x += step * 1.1) {
+          for (let k = 0; k < 4; k++) {
+            const a = k * Math.PI / 2;
+            c.beginPath();
+            c.ellipse(x + Math.cos(a) * step * 0.18, y + Math.sin(a) * step * 0.18, step * 0.14, step * 0.07, a, 0, Math.PI * 2);
+            c.fill();
+          }
+        }
+      }
+    } else {
+      c.beginPath();
+      for (let i = -h; i < w + h; i += step) {
+        c.moveTo(i, 0); c.lineTo(i + h, h);
+        c.moveTo(i, h); c.lineTo(i + h, 0);
+      }
+      c.stroke();
+      if (B.pattern === 'diamond') {
+        for (let y = 0; y < h; y += step) for (let x = (y / step) % 2 ? step / 2 : 0; x < w; x += step) {
+          c.beginPath(); c.moveTo(x, y - 1.6); c.lineTo(x + 1.2, y); c.lineTo(x, y + 1.6); c.lineTo(x - 1.2, y); c.closePath(); c.fill();
+        }
+      }
     }
-    c.stroke();
     c.beginPath();
     c.ellipse(w / 2, h / 2, w * 0.22, h * 0.16, 0, 0, Math.PI * 2);
-    c.fillStyle = '#0b0b0c';
+    c.fillStyle = B.medallion;
     c.fill();
-    c.strokeStyle = metal(c, 'gold', 0, 0, w, h);
+    c.strokeStyle = ink(c, B.emblem, 0, 0, w, h);
     c.lineWidth = 0.9;
     c.stroke();
-    drawSuit(c, 'S', w / 2, h / 2, h * 0.15, false, 'gold');
+    drawSuit(c, B.emblemSuit || 'S', w / 2, h / 2, h * 0.15, false, B.emblem);
     c.restore();
     roundRect(c, m, m, w - 2 * m, h - 2 * m, r * 0.6);
-    c.strokeStyle = metal(c, 'gold', 0, 0, w, h);
+    c.strokeStyle = ink(c, B.emblem, 0, 0, w, h);
     c.lineWidth = 0.9;
     c.stroke();
   }
@@ -695,9 +789,10 @@
     const stacks = [];
     let left = Math.max(0, Math.floor(amount));
     for (let i = 0; i < DENOMS.length && stacks.length < 4; i++) {
-      const n = Math.floor(left / DENOMS[i].v);
+      const v = DENOMS[i].v * chipMult;
+      const n = Math.floor(left / v);
       if (!n) continue;
-      left -= n * DENOMS[i].v;
+      left -= n * v;
       stacks.push([i, Math.min(CHIP.maxPerStack, n)]);
     }
     return stacks;
@@ -942,6 +1037,7 @@
 
   // ---------- main draw ----------
   function draw(ctx, state, myId, seatColors, now) {
+    if (state && state.room) setRoom(state.room);
     if (!bgLayer) bgLayer = buildBackground();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
@@ -1138,5 +1234,5 @@
     return busy;
   }
 
-  global.PokerRender = { init, resize, draw };
+  global.PokerRender = { init, resize, draw, setRoom };
 })(window);

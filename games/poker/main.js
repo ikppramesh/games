@@ -57,6 +57,80 @@
   let hostTurnTimer = null;
   let lastFrame = 0, animating = false; // render loop bookkeeping
 
+  // ---------- rooms (stakes + theme) ----------
+  // Every room plays the same game; the starting stack, blinds, table,
+  // cards and page colours change. The host's room travels in the state.
+  const roomStore = {
+    get() { try { return localStorage.getItem('poker.room'); } catch (e) { return null; } },
+    set(v) { try { localStorage.setItem('poker.room', v); } catch (e) { /* ignore */ } }
+  };
+  let selectedRoom = PokerRooms.get(roomStore.get()).id;
+  let shownRoom = null;
+  const inr = PokerRooms.inr;
+  const METAL_HEX = { gold: '#e9c25a', rose: '#eea683', silver: '#d5dce4', ice: '#7fd0ff' };
+
+  function roomTiles() {
+    const tile = (r) => {
+      const f = r.table.felt;
+      return `<button type="button" class="room-tile" data-room="${r.id}"
+        style="--tile-bg:radial-gradient(circle at 30% 20%, ${f[0]}, ${f[2]} 80%); --tile-accent:${r.ui.accent}">
+        <span class="ri">${r.icon}</span><b>${r.name}</b>
+        <span class="buyin">${inr(r.start, true)}</span>
+        <span class="blinds">Blinds ${inr(r.smallBlind, true)}/${inr(r.bigBlind, true)}</span></button>`;
+    };
+    document.getElementById('roomsGrid').innerHTML = PokerRooms.list.filter(r => r.section === 'rooms').map(tile).join('');
+    document.getElementById('highGrid').innerHTML = PokerRooms.list.filter(r => r.section === 'high').map(tile).join('');
+    document.querySelector('.room-picker').addEventListener('click', (e) => {
+      const b = e.target.closest('.room-tile');
+      if (!b || b.disabled) return;
+      selectedRoom = b.dataset.room;
+      roomStore.set(selectedRoom);
+      applyRoom(selectedRoom);
+    });
+  }
+
+  function activeRoom() {
+    if (TABLE) return TABLE.room;
+    if (remoteState && remoteState.room) return remoteState.room;
+    return selectedRoom;
+  }
+
+  // restyle the whole page for a room
+  function applyRoom(id) {
+    const r = PokerRooms.get(id);
+    const st = document.documentElement.style, u = r.ui;
+    st.setProperty('--bg', u.bg); st.setProperty('--bg2', u.bg2);
+    st.setProperty('--panel', u.panel); st.setProperty('--panel-2', u.panel2);
+    st.setProperty('--border', u.border); st.setProperty('--accent', u.accent);
+    st.setProperty('--accent-text', u.accentText); st.setProperty('--muted', u.muted);
+    const cf = r.cards.face;
+    st.setProperty('--mc-face1', cf[0]); st.setProperty('--mc-face2', cf[2]);
+    st.setProperty('--mc-edge', r.cards.edge);
+    st.setProperty('--mc-black', METAL_HEX[r.cards.ink.black] || r.cards.ink.black);
+    st.setProperty('--mc-red', METAL_HEX[r.cards.ink.red] || r.cards.ink.red);
+    document.body.classList.toggle('serif', !!u.serif);
+    document.getElementById('roomIcon').textContent = r.icon;
+    document.getElementById('roomTitle').textContent = '· ' + r.name;
+    document.title = `IR Hold'em · ${r.name}`;
+    document.querySelectorAll('.room-tile').forEach(b => {
+      b.classList.toggle('active', b.dataset.room === r.id);
+      b.disabled = !!mode;
+    });
+    document.getElementById('roomNote').textContent = mode === 'client'
+      ? `Playing in the host's room: ${r.name} (${r.tagline})`
+      : `${r.name}: ${r.tagline}. Everyone starts with ${inr(r.start)}.`;
+    shownRoom = r.id;
+    PokerRender.setRoom(r.id);
+    if (typeof render === 'function') render();
+  }
+
+  function roomTable() {
+    const r = PokerRooms.get(selectedRoom);
+    return PK.newTable({ room: r.id, startChips: r.start, smallBlind: r.smallBlind, bigBlind: r.bigBlind });
+  }
+
+  roomTiles();
+  applyRoom(selectedRoom);
   render(); // draw the empty table immediately, before any game starts
 
   // ---------- hand rankings cheat sheet ----------
@@ -114,7 +188,8 @@
       (code) => {
         mode = 'host';
         myId = code;
-        TABLE = PK.newTable();
+        TABLE = roomTable();
+        applyRoom(TABLE.room); // locks the picker - the room is set for this table
         PK.addPlayer(TABLE, myId, els.hostName.value.trim() || 'Player 1', false);
         els.createBtn.textContent = 'Table Created';
         els.roomCodeBox.hidden = false;
@@ -198,6 +273,7 @@
       code,
       () => {
         mode = 'client';
+        applyRoom(activeRoom()); // the host picks the room
         myId = PokerNet.myId;
         PokerNet.sendToHost({ type: 'hello', name: els.joinName.value.trim() || 'Player' });
         els.joinBtn.textContent = 'Connected!';
@@ -214,6 +290,7 @@
   function handleGuestData(data) {
     if (data.type === 'state') {
       remoteState = data.state;
+      if (remoteState.room && remoteState.room !== shownRoom) applyRoom(remoteState.room);
       if (remoteState.stage === 'waiting') {
         els.joinStatusMsg.textContent = `Waiting for the host to start... (${remoteState.players.length} seated)`;
       } else if (!gameStarted) {
@@ -230,7 +307,8 @@
   els.practiceBtn.addEventListener('click', () => {
     mode = 'practice';
     myId = 'you';
-    TABLE = PK.newTable();
+    TABLE = roomTable();
+    applyRoom(TABLE.room);
     PK.addPlayer(TABLE, myId, 'You', false);
     const n = Number(els.botCount.value);
     for (let i = 1; i <= n; i++) PK.addPlayer(TABLE, 'bot-' + i, 'Computer ' + i, true);
