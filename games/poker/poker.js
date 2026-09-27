@@ -343,7 +343,7 @@
   function awardUncontested(t, winner) {
     winner.chips += t.pot;
     t.winners = [{ id: winner.id, name: winner.name, amount: t.pot, handName: null }];
-    addLog(t, `${winner.name} wins ${rupees(t.pot)} (everyone else folded).`);
+    addLog(t, `${winner.name} ${winner.name === 'You' ? 'win' : 'wins'} ${rupees(t.pot)} (everyone else folded).`);
     t.pot = 0;
     t.stage = 'showdown';
     t.actingId = null;
@@ -376,7 +376,7 @@
       }
     }
     t.winners = Object.values(results);
-    for (const r of t.winners) addLog(t, `${r.name} wins ${rupees(r.amount)}${r.handName ? ' with ' + r.handName : ''}.`);
+    for (const r of t.winners) addLog(t, `${r.name} ${r.name === 'You' ? 'win' : 'wins'} ${rupees(r.amount)}${r.handName ? ' with ' + r.handName : ''}.`);
     t.pot = 0;
     t.stage = 'showdown';
     t.actingId = null;

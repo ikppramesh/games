@@ -382,7 +382,7 @@
       if (!TABLE) return;
       PK.dealHand(TABLE);
       hostProcessTurn();
-    }, 4500);
+    }, TABLE.winners.some(w => w.handName) ? 7000 : 4000); // a real showdown gets time to show the winning hand
   }
 
   function submitAction(action) {

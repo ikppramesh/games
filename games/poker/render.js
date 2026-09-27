@@ -1244,6 +1244,59 @@
     return true;
   }
 
+  // ---------- showdown: build the winning hand in the middle of the table ----------
+  // The winner's best five cards form a row where the board was: unused board
+  // cards drop away, the winner's hole cards fly up from their seat, and the
+  // five slide into hand order (e.g. the trips, then the pair) and glow.
+  const SD = { delay: 900, drop: 450, flyStart: 350, fly: 700, stagger: 90 };
+  const sameCard = (a, b) => a && b && a.rank === b.rank && a.suit === b.suit;
+
+  function handOrder(cards, category) {
+    const cnt = {};
+    cards.forEach(c => { cnt[c.rank] = (cnt[c.rank] || 0) + 1; });
+    const sorted = cards.slice().sort((a, b) => (cnt[b.rank] - cnt[a.rank]) || (b.rank - a.rank) || (a.suit < b.suit ? -1 : 1));
+    // a 5-high straight (A-2-3-4-5) shows the ace at the low end
+    if ((category === 4 || category === 8) && sorted[0].rank === 14 && sorted.some(c => c.rank === 5) && !sorted.some(c => c.rank === 13)) sorted.push(sorted.shift());
+    return sorted;
+  }
+
+  function showdownPlan(state) {
+    if (anim.sdPlan !== undefined && anim.sdPlanHand === state.handNumber) return anim.sdPlan;
+    anim.sdPlanHand = state.handNumber;
+    anim.sdPlan = null;
+    const w = state.winners.find(x => x.handName);
+    const p = w && state.players.find(x => x.id === w.id);
+    if (!p || !p.holeCards || !p.holeCards[0] || state.community.length < 5 || !global.PK) return null;
+    const best = global.PK.bestHand(p.holeCards.concat(state.community));
+    if (!best) return null;
+    const order = handOrder(best.cards, best.rank[0]).map(card => {
+      const ci = state.community.findIndex(c => sameCard(c, card));
+      return ci >= 0 ? { card, src: 'board', index: ci } : { card, src: 'hole', index: p.holeCards.findIndex(c => sameCard(c, card)) };
+    });
+    anim.sdPlan = {
+      playerId: p.id, order,
+      usedBoard: new Set(order.filter(o => o.src === 'board').map(o => o.index)),
+      usedHole: new Set(order.filter(o => o.src === 'hole').map(o => o.index))
+    };
+    return anim.sdPlan;
+  }
+
+  // where a seat's hole card k sits (mirrors the seat drawing below)
+  function holeCardSpot(pos, isMe, k) {
+    const r = isMe ? 30 : 26, h = isMe ? 70 : 50, spread = isMe ? 17 : 11;
+    return { x: pos.x + (k === 0 ? -1 : 1) * spread, y: pos.y - r - h / 2 + (isMe ? 6 : 8) - 6, w: isMe ? 50 : 36, rot: (k === 0 ? -1 : 1) * 0.11 };
+  }
+
+  function drawGlow(ctx, x, y, w, h, strength) {
+    ctx.save();
+    ctx.shadowColor = `rgba(255,210,90,${0.9 * strength})`;
+    ctx.shadowBlur = 16 * RES * strength;
+    roundRect(ctx, x - w / 2 - 2, y - h / 2 - 2, w + 4, h + 4, 6);
+    ctx.fillStyle = `rgba(255,214,110,${0.85 * strength})`;
+    ctx.fill();
+    ctx.restore();
+  }
+
   // ---------- main draw ----------
   function draw(ctx, state, myId, seatColors, now) {
     if (state && state.room) setRoom(state.room);
@@ -1282,7 +1335,44 @@
     const cw = COMMUNITY.w, ch = COMMUNITY.h, gap = COMMUNITY.gap;
     const startX = CX - (cw * 5 + gap * 4) / 2 + cw / 2;
     let fresh = 0;
-    for (let i = 0; i < 5; i++) {
+    const plan = showdown ? showdownPlan(state) : null;
+    const sdStart = plan ? firstSeen('showdown', now, SD.delay) : 0;
+    const sdT = plan ? now - sdStart : -1;
+    if (plan && sdT >= 0) {
+      busy = true;
+      const slotX = (i) => startX + i * (cw + gap);
+      // unused board cards drop below the row and fade
+      state.community.forEach((card, i) => {
+        if (plan.usedBoard.has(i)) return;
+        const k = easeOut(clamp01(sdT / SD.drop));
+        ctx.save();
+        ctx.globalAlpha = 1 - 0.7 * k;
+        drawCard(ctx, card, slotX(i), CY + k * (ch * 0.5), cw, ch, { scale: 1 - 0.4 * k });
+        ctx.restore();
+      });
+      // the five winning cards travel into hand order
+      const winner = state.players.find(x => x.id === plan.playerId);
+      const wpos = winner ? posOf(winner) : { x: CX, y: H };
+      const assembled = sdT > SD.flyStart + SD.fly + SD.stagger * 4;
+      const pulse = 0.65 + 0.35 * Math.sin(now / 240);
+      plan.order.forEach((o, j) => {
+        let from, fromScale = 1, fromRot = 0;
+        if (o.src === 'board') from = { x: slotX(o.index), y: CY };
+        else {
+          const hs = holeCardSpot(wpos, winner && winner.id === myId, o.index);
+          from = { x: hs.x, y: hs.y }; fromScale = hs.w / cw; fromRot = hs.rot;
+        }
+        const to = { x: slotX(j), y: CY };
+        const k = easeInOut(clamp01((sdT - SD.flyStart - j * SD.stagger) / SD.fly));
+        const x = lerp(from.x, to.x, k);
+        const y = lerp(from.y, to.y, k) - Math.sin(Math.PI * k) * (o.src === 'hole' ? 40 : 22);
+        const moving = k > 0 && k < 1;
+        if (assembled) drawGlow(ctx, to.x, to.y, cw, ch, pulse);
+        else if (k >= 1) drawGlow(ctx, to.x, to.y, cw, ch, 0.5);
+        drawCard(ctx, o.card, x, y, cw, ch, { scale: lerp(fromScale, 1, k) * (moving ? 1.08 : 1), rot: lerp(fromRot, 0, k), lift: moving });
+      });
+    }
+    for (let i = 0; i < 5 && !(plan && sdT >= 0); i++) {
       const x = startX + i * (cw + gap);
       const card = state.community[i];
       if (!card) {
@@ -1358,6 +1448,7 @@
         const faceUp = isMe || showdown;
         p.holeCards.forEach((card, k) => {
           const side = k === 0 ? -1 : 1;
+          if (plan && sdT >= SD.flyStart && p.id === plan.playerId && plan.usedHole.has(k)) return; // it's in the winning row now
           busy = dealtCard(ctx, `h-${p.id}-${k}`, card, pos.x + side * spread, cy - (isWinner ? 6 : 0), w, h,
             { rot: side * 0.11, faceDown: !faceUp || !card, flip: isMe }, now, (p.seat * 2 + k) * 60) || busy;
         });
@@ -1405,7 +1496,7 @@
 
     // showdown: the pot slides over to the winner(s), then a banner
     if (showdown && state.winners.length) {
-      const start = firstSeen('award', now, 250);
+      const start = firstSeen('award', now, plan ? SD.delay + SD.flyStart + SD.fly + SD.stagger * 4 + 200 : 250);
       const t = clamp01((now - start) / AWARD_MS);
       if (t < 1) busy = true;
       const e = easeInOut(t);
@@ -1416,10 +1507,17 @@
         drawChips(ctx, lerp(POT_SPOT.x, spot.x, e), lerp(POT_SPOT.y, spot.y, e) - Math.sin(Math.PI * t) * 18, w.amount, { label: t >= 1 });
       });
 
-      const text = state.winners.map(w => `${w.name} wins ${fmt(w.amount)}${w.handName ? ' — ' + w.handName : ''}`).join('   •   ');
+      const text = state.winners.map(w => `${w.name === 'You' ? 'You win' : w.name + ' wins'} ${fmt(w.amount)}${w.handName ? ' — ' + w.handName : ''}`).join('   •   ');
       ctx.font = `700 14px ${SANS}`;
       const tw = Math.min(W - 40, ctx.measureText(text).width + 40);
-      const by = CY + 60;
+      // with the hand being built, the banner waits for it and sits below the dropped cards
+      const bannerIn = plan ? clamp01((sdT - (SD.flyStart + SD.fly + SD.stagger * 4)) / 300) : 1;
+      const by = plan ? CY + 85 : CY + 60;
+      ctx.save();
+      ctx.globalAlpha = bannerIn;
+      ctx.translate(CX, by);
+      ctx.scale(0.9 + 0.1 * easeOut(bannerIn), 0.9 + 0.1 * easeOut(bannerIn));
+      ctx.translate(-CX, -by);
       ctx.save();
       ctx.shadowColor = 'rgba(0,0,0,0.6)';
       ctx.shadowBlur = 12 * RES;
@@ -1438,6 +1536,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       fitText(ctx, '✨ ' + text, CX, by + 0.5, tw - 24);
+      ctx.restore();
     }
 
     return busy;
