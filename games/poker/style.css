@@ -66,19 +66,18 @@ a{color:var(--accent);}
   flex:1 1 auto;
   min-height:0;
   width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  position:relative;
 }
+/* fills the whole board area; render.js fits the table to whatever size it gets */
 #tableCanvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
   background:#0a0705;
   border-radius:14px;
   box-shadow:0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,220,170,0.06);
-  width:auto;
-  height:auto;
-  max-width:100%;
-  max-height:100%;
-  aspect-ratio:900 / 620;
   touch-action:none;
 }
 .hint{
@@ -330,8 +329,11 @@ button{
     gap:8px;
   }
   .board-wrap{
-    flex:1 1 auto;
-    max-height:62%;
+    flex:0 0 auto;
+  }
+  .canvas-frame{
+    flex:0 0 auto;
+    height:min(calc((100vw - 24px) * 0.68), 52dvh);
   }
   .panel{
     flex:1 1 0;
@@ -493,8 +495,8 @@ body.rankings-hidden .rankings{display:none;}
   body:has(#gamePanel:not([hidden])) .hint{display:none;}
 
   .rankings{
-    flex:0 0 240px;
-    width:240px;
+    flex:0 0 212px;
+    width:212px;
     align-self:flex-start;
     padding:10px 10px 8px;
     border-radius:12px;
@@ -512,9 +514,9 @@ body.rankings-hidden .rankings{display:none;}
     cursor:help;
   }
   .rk-cards{margin:0; gap:1px;}
-  .mini-card{width:17px; height:23px; border-radius:3px;}
-  .mc-rank{font-size:0.56rem;}
-  .mc-suit{font-size:0.6rem; margin-top:0;}
+  .mini-card{width:15px; height:21px; border-radius:3px;}
+  .mc-rank{font-size:0.52rem; letter-spacing:-0.06em;}
+  .mc-suit{font-size:0.56rem; margin-top:0;}
   .rk-title{font-size:0.6rem; gap:4px; letter-spacing:0.01em; white-space:nowrap;}
   .rk-num{width:14px; height:14px; font-size:0.54rem;}
   .rk-you{margin-left:0; font-size:0.5rem; padding:0 5px;}
@@ -539,9 +541,9 @@ body.rankings-hidden .rankings{display:none;}
     border-radius:12px;
   }
   #gamePanel h2{display:none;}
-  #handStatus{font-size:0.7rem;}
+  #handStatus{display:none;}
   #turnStatus{font-size:0.76rem; padding:5px; min-height:0;}
-  #log{font-size:0.66rem; padding:5px 8px; min-height:0; max-height:62px; flex:0 0 auto;}
+  #log{font-size:0.66rem; padding:5px 8px; min-height:0; max-height:46px; flex:0 0 auto;}
   #leaveBtn{padding:4px; font-size:0.72rem;}
 
   .action-bar{

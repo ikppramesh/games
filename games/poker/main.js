@@ -427,6 +427,9 @@
   function loop(now) {
     if (animating || now - lastFrame > 500) render();
     requestAnimationFrame(loop);
+
+  // the canvas fills its container - refit the table whenever that changes
+  new ResizeObserver(() => { PokerRender.resize(); render(); }).observe(canvas);
   }
   requestAnimationFrame(loop);
 

@@ -4,12 +4,18 @@
    cards), clay chip stacks broken into denominations, and deal / bet / pot
    animations. Pure drawing code - main.js hands it the personalized state. */
 (function (global) {
-  const W = 900, H = 620, CX = W / 2, CY = H / 2 - 10;
-  const RAIL = { rx: 428, ry: 262 };
-  const TRIM = { rx: 381, ry: 216 };
-  const FELT = { rx: 368, ry: 203 };
-  const SEAT = { rx: 370, ry: 205 };
-  const DECK = { x: CX, y: CY - 130 };
+  // The table is laid out in "design units" (BASE_W x H) and scaled to fill
+  // the canvas. On screens wider than the design, W grows and the oval
+  // stretches sideways (up to MAX_STRETCH) so the table uses the full width.
+  const BASE_W = 900, H = 596, CY = H / 2 - 10, MAX_STRETCH = 1.35;
+  const BASE_RX = { rail: 428, trim: 381, felt: 368, seat: 370 };
+  const RAIL = { rx: BASE_RX.rail, ry: 262 };
+  const TRIM = { rx: BASE_RX.trim, ry: 216 };
+  const FELT = { rx: BASE_RX.felt, ry: 203 };
+  const SEAT = { rx: BASE_RX.seat, ry: 205 };
+  let W = BASE_W, CX = W / 2;
+  let DECK = { x: CX, y: CY - 130 };
+  let POT_SPOT = { x: CX - 36, y: CY - 44 };
 
   const SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
   const SERIF = 'Georgia, "Times New Roman", Times, serif';
@@ -27,28 +33,54 @@
   ];
   const CHIP = { r: 10, ry: 5.6, t: 2.8, maxPerStack: 8 };
 
-  let DPR = 1;
+  let DPR = 1;          // device pixels per CSS pixel
+  let RES = 1;          // device pixels per design unit (DPR * view scale)
+  let VIEW = { s: 1, ox: 0, oy: 0, cw: BASE_W, ch: H };
+  let canvasEl = null;
   let bgLayer = null;
   const sprites = new Map();
 
   function init(canvas) {
+    canvasEl = canvas;
+    resize();
+    return canvas.getContext('2d');
+  }
+
+  // match the canvas to its on-screen size and refit the table to it
+  function resize() {
+    const rect = canvasEl.getBoundingClientRect();
+    const cw = Math.max(1, rect.width), ch = Math.max(1, rect.height);
     DPR = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = Math.round(W * DPR);
-    canvas.height = Math.round(H * DPR);
-    const ctx = canvas.getContext('2d');
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    W = BASE_W * Math.max(1, Math.min(MAX_STRETCH, (cw / ch) / (BASE_W / H)));
+    CX = W / 2;
+    const extra = (W - BASE_W) / 2;
+    RAIL.rx = BASE_RX.rail + extra;
+    TRIM.rx = BASE_RX.trim + extra;
+    FELT.rx = BASE_RX.felt + extra;
+    SEAT.rx = BASE_RX.seat + extra;
+    DECK = { x: CX, y: CY - 130 };
+    POT_SPOT = { x: CX - 36, y: CY - 44 };
+    const s = Math.min(cw / W, ch / H);
+    VIEW = { s, ox: (cw - W * s) / 2, oy: (ch - H * s) / 2, cw, ch };
+    RES = DPR * s;
+    canvasEl.width = Math.round(cw * DPR);
+    canvasEl.height = Math.round(ch * DPR);
     bgLayer = null;
     sprites.clear();
-    return ctx;
+  }
+
+  // the whole visible canvas, in design units
+  function viewRect() {
+    return [-VIEW.ox / VIEW.s, -VIEW.oy / VIEW.s, VIEW.cw / VIEW.s, VIEW.ch / VIEW.s];
   }
 
   // ---------- small helpers ----------
   function makeLayer(w, h) {
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.ceil(w * DPR));
-    canvas.height = Math.max(1, Math.ceil(h * DPR));
+    canvas.width = Math.max(1, Math.ceil(w * RES));
+    canvas.height = Math.max(1, Math.ceil(h * RES));
     const ctx = canvas.getContext('2d');
-    ctx.scale(DPR, DPR);
+    ctx.scale(RES, RES);
     return { canvas, ctx };
   }
 
@@ -91,10 +123,10 @@
     c.globalCompositeOperation = op || 'overlay';
     const pat = c.createPattern(noise, 'repeat');
     if (pat && pat.setTransform && typeof DOMMatrix !== 'undefined') {
-      pat.setTransform(new DOMMatrix().scaleSelf(1 / DPR, 1 / DPR));
+      pat.setTransform(new DOMMatrix().scaleSelf(1 / RES, 1 / RES));
     }
     c.fillStyle = pat;
-    c.fillRect(0, 0, W, H);
+    c.fillRect(...viewRect());
     c.restore();
   }
 
@@ -148,7 +180,12 @@
 
   // ---------- static background: room, rail, trim, felt, lighting ----------
   function buildBackground() {
-    const L = makeLayer(W, H), c = L.ctx;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasEl.width;
+    canvas.height = canvasEl.height;
+    const c = canvas.getContext('2d');
+    c.setTransform(RES, 0, 0, RES, VIEW.ox * DPR, VIEW.oy * DPR);
+    const full = viewRect();
 
     // the room - dark and warm, lit from a lamp over the table
     const room = c.createRadialGradient(CX, CY - 40, 60, CX, CY, 640);
@@ -156,14 +193,14 @@
     room.addColorStop(0.55, '#1a120c');
     room.addColorStop(1, '#060403');
     c.fillStyle = room;
-    c.fillRect(0, 0, W, H);
+    c.fillRect(...full);
     texture(c, noiseCanvas(128, 91, 60), 0.35, 'overlay');
 
     // table casts a soft shadow on the floor
     c.save();
     c.shadowColor = 'rgba(0,0,0,0.85)';
-    c.shadowBlur = 46 * DPR;
-    c.shadowOffsetY = 20 * DPR;
+    c.shadowBlur = 46 * RES;
+    c.shadowOffsetY = 20 * RES;
     c.beginPath(); ellipse(c, RAIL);
     c.fillStyle = '#120a06';
     c.fill();
@@ -288,11 +325,11 @@
     c.fillText('♠  ♥  ♦  ♣', CX, CY + 96);
     // the rail throws a soft shadow onto the felt
     c.beginPath();
-    c.rect(-50, -50, W + 100, H + 100);
+    c.rect(full[0] - 50, full[1] - 50, full[2] + 100, full[3] + 100);
     ellipse(c, FELT);
     c.shadowColor = 'rgba(0,0,0,0.8)';
-    c.shadowBlur = 26 * DPR;
-    c.shadowOffsetY = 7 * DPR;
+    c.shadowBlur = 26 * RES;
+    c.shadowOffsetY = 7 * RES;
     c.fillStyle = '#000';
     c.fill('evenodd');
     c.restore();
@@ -305,15 +342,15 @@
     lamp.addColorStop(0.5, 'rgba(255,236,190,0.04)');
     lamp.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = lamp;
-    c.fillRect(0, 0, W, H);
+    c.fillRect(...full);
     c.restore();
     const vig = c.createRadialGradient(CX, CY, 250, CX, CY, 620);
     vig.addColorStop(0, 'rgba(0,0,0,0)');
     vig.addColorStop(1, 'rgba(0,0,0,0.55)');
     c.fillStyle = vig;
-    c.fillRect(0, 0, W, H);
+    c.fillRect(...full);
 
-    return L.canvas;
+    return canvas;
   }
 
   // ---------- suits (vector, so they never fall back to emoji glyphs) ----------
@@ -565,9 +602,9 @@
     if (o.rot) ctx.rotate(o.rot);
     ctx.scale(Math.max(0.001, (o.scaleX == null ? 1 : o.scaleX) * s), s);
     ctx.shadowColor = 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur = (o.lift ? 12 : 5) * DPR;
-    ctx.shadowOffsetX = 1 * DPR;
-    ctx.shadowOffsetY = (o.lift ? 7 : 2.5) * DPR;
+    ctx.shadowBlur = (o.lift ? 12 : 5) * RES;
+    ctx.shadowOffsetX = 1 * RES;
+    ctx.shadowOffsetY = (o.lift ? 7 : 2.5) * RES;
     ctx.drawImage(cardSprite(card, w, h, o.faceDown), -w / 2, -h / 2, w, h);
     ctx.restore();
   }
@@ -725,7 +762,7 @@
     if (o.glow) {
       ctx.save();
       ctx.shadowColor = o.glow;
-      ctx.shadowBlur = o.glowSize * DPR;
+      ctx.shadowBlur = o.glowSize * RES;
       ctx.beginPath();
       ctx.arc(x, y, r + 3.5, 0, Math.PI * 2);
       ctx.fillStyle = o.glow;
@@ -735,8 +772,8 @@
     // bezel with a drop shadow
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 8 * DPR;
-    ctx.shadowOffsetY = 3 * DPR;
+    ctx.shadowBlur = 8 * RES;
+    ctx.shadowOffsetY = 3 * RES;
     ctx.beginPath();
     ctx.arc(x, y, r + 3, 0, Math.PI * 2);
     const bez = ctx.createLinearGradient(0, y - r, 0, y + r);
@@ -790,8 +827,8 @@
     const w = 120, h = 36;
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.55)';
-    ctx.shadowBlur = 8 * DPR;
-    ctx.shadowOffsetY = 3 * DPR;
+    ctx.shadowBlur = 8 * RES;
+    ctx.shadowOffsetY = 3 * RES;
     roundRect(ctx, x - w / 2, y, w, h, 9);
     const g = ctx.createLinearGradient(0, y, 0, y + h);
     g.addColorStop(0, 'rgba(38,36,40,0.95)');
@@ -853,7 +890,6 @@
     return { x: lerp(pos.x, CX, 0.5), y: lerp(pos.y, CY, 0.58) };
   }
 
-  const POT_SPOT = { x: CX - 36, y: CY - 44 };
 
   // ---------- animation bookkeeping ----------
   const anim = { hand: null, seen: new Map(), bets: new Map(), flying: [] };
@@ -892,8 +928,10 @@
   // ---------- main draw ----------
   function draw(ctx, state, myId, seatColors, now) {
     if (!bgLayer) bgLayer = buildBackground();
-    ctx.clearRect(0, 0, W, H);
-    ctx.drawImage(bgLayer, 0, 0, W, H);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx.drawImage(bgLayer, 0, 0);
+    ctx.setTransform(RES, 0, 0, RES, VIEW.ox * DPR, VIEW.oy * DPR);
 
     if (!state || !state.players || !state.players.length) {
       ctx.fillStyle = 'rgba(255,240,210,0.75)';
@@ -1064,7 +1102,7 @@
       const by = CY + 60;
       ctx.save();
       ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 12 * DPR;
+      ctx.shadowBlur = 12 * RES;
       roundRect(ctx, CX - tw / 2, by - 15, tw, 30, 15);
       const g = ctx.createLinearGradient(0, by - 15, 0, by + 15);
       g.addColorStop(0, 'rgba(40,30,12,0.95)');
@@ -1085,5 +1123,5 @@
     return busy;
   }
 
-  global.PokerRender = { init, draw, W, H };
+  global.PokerRender = { init, resize, draw };
 })(window);
