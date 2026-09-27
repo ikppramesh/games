@@ -13,6 +13,7 @@ Play it live:
 | 🧊 Table Shuffleboard | Live | [`games/table-shuffleboard/`](games/table-shuffleboard/) |
 | ♠️ Texas Hold'em Poker | Live | [`games/poker/`](games/poker/) |
 | 🦇 Snakes & Ladders: Gotham | Live | [`games/snake-and-ladder/`](games/snake-and-ladder/) |
+| 🃏 UNO Ultimate | Live | [`games/UNO/`](games/UNO/) |
 | ♟️ Chess | Planned | — |
 | 🏠 Monopoly / Indian Business | Planned | — |
 | ❌⭕ Tic Tac Toe | Planned | — |

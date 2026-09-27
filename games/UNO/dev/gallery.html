@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Card Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Archivo:ital,wght@1,800;1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<style>body{padding:20px} .row2{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 24px;padding:16px;border-radius:12px;background:var(--noise),var(--felt)} h3{color:#ddd}</style></head>
+<body><div id="out"></div>
+<script src="../js/themes.js"></script><script src="../js/cards.js"></script>
+<script>
+const faces0=[{color:'red',type:'number',value:7},{color:'yellow',type:'number',value:6},{color:'green',type:'skip'},{color:'blue',type:'reverse'},{color:'red',type:'draw',draw:2},{color:'wild',type:'wild'},{color:'wild',type:'wildDraw',draw:4},{color:'wild',type:'wildDraw',draw:15},{color:'green',type:'skipAll'},{color:'blue',type:'discardAll'},{color:'wild',type:'wildReverseDraw',draw:4},{color:'wild',type:'colorRoulette'},{color:'yellow',type:'draw',draw:6}];
+const faces1=[{color:'pink',type:'number',value:9},{color:'teal',type:'flip'},{color:'orange',type:'draw',draw:5},{color:'purple',type:'skipAll'},{color:'wild',type:'wildDrawColor'},{color:'yellow',type:'flip'},{color:'green',type:'draw',draw:1},{color:'wild',type:'wildDraw',draw:2}];
+let h='';
+for (const [id,t] of Object.entries(UNO_THEMES)) {
+  document.documentElement.style.setProperty('--felt', t.felt.light);
+  h+=`<h3>${t.name}</h3><div class="row2" style="--felt:${t.felt.light}">`+faces0.map(f=>UnoCards.renderFace(f,t,{side:0})).join('')+UnoCards.renderBack(t)+`</div>`;
+  h+=`<div class="row2" style="--felt:${t.felt.dark}">`+faces1.map(f=>UnoCards.renderFace(f,t,{side:f.color==='yellow'||f.color==='green'||f.type==='wildDraw'?0:1})).join('')+UnoCards.renderFace(faces0[0],t,{extraClass:'mini'})+UnoCards.renderBack(t,'mini')+UnoCards.renderBack(t,'small')+`</div>`;
+}
+document.getElementById('out').innerHTML=h;
+</script></body></html>

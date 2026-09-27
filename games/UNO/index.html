@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UNO Ultimate</title>
+  <meta name="description" content="Play UNO online with friends or against the computer — Classic, Flip, No Mercy, Liar's UNO and more.">
+  <link rel="icon" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Archivo:ital,wght@1,800;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="fx" aria-hidden="true"></div>
+
+  <!-- HOME -->
+  <section id="screen-home" class="screen">
+    <div class="home-wrap">
+      <a class="back-link" href="../../index.html">&larr; Game Room</a>
+      <img class="logo" src="assets/logo.png" alt="UNO Ultimate">
+      <label class="field">
+        <span>Your name</span>
+        <input id="name" maxlength="20" placeholder="Enter your name" autocomplete="nickname">
+      </label>
+
+      <div id="join-invite" class="panel invite hidden">
+        <h2>You're invited</h2>
+        <p>Join room <b id="invite-code"></b></p>
+        <button id="btn-accept-invite" class="btn primary big">Join game</button>
+      </div>
+
+      <div class="home-grid">
+        <div class="panel">
+          <h2>Play vs Computer</h2>
+          <label class="field"><span>Game mode</span><select id="solo-variant"></select></label>
+          <label class="field"><span>Theme</span><select id="solo-theme"></select></label>
+          <label class="field"><span>Computer opponents</span>
+            <select id="solo-bots">
+              <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option>
+              <option>6</option><option>7</option><option>8</option><option>9</option>
+            </select>
+          </label>
+          <button id="btn-solo" class="btn primary big">Play now</button>
+        </div>
+
+        <div class="panel">
+          <h2>Play with Friends</h2>
+          <p class="muted">Create a room and share the link. Friends anywhere can join, and you can fill empty seats with computer players.</p>
+          <button id="btn-create" class="btn primary big">Create room</button>
+          <div class="or"><span>or join with a code</span></div>
+          <div class="row">
+            <input id="join-code" maxlength="5" placeholder="CODE" autocomplete="off" class="code-input">
+            <button id="btn-join" class="btn">Join</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOBBY -->
+  <section id="screen-lobby" class="screen hidden">
+    <div class="lobby-wrap">
+      <header class="lobby-head">
+        <img class="logo small" src="assets/logo.png" alt="UNO Ultimate">
+        <div class="room-code">Room <b id="lobby-code"></b></div>
+        <button id="btn-lobby-leave" class="btn ghost">Leave</button>
+      </header>
+
+      <div class="panel share">
+        <h3>Invite friends</h3>
+        <div class="row">
+          <input id="share-link" readonly>
+          <button id="btn-copy" class="btn">Copy link</button>
+          <button id="btn-share" class="btn hidden">Share…</button>
+        </div>
+      </div>
+
+      <div class="lobby-grid">
+        <div class="panel">
+          <h3>Players <span id="player-count" class="muted"></span></h3>
+          <ul id="member-list" class="members"></ul>
+          <button id="btn-add-bot" class="btn host-only">+ Add computer player</button>
+          <button id="btn-start" class="btn primary big host-only">Start game</button>
+          <p id="wait-host" class="muted guest-only">Waiting for the host to start…</p>
+        </div>
+
+        <div class="panel settings">
+          <h3>Game settings <span class="muted guest-only">(host decides)</span></h3>
+          <label class="field"><span>Game mode</span><select id="set-variant" class="host-input"></select></label>
+          <p id="variant-desc" class="muted small"></p>
+          <label class="field"><span>Theme</span><select id="set-theme" class="host-input"></select></label>
+          <div id="theme-preview" class="theme-preview"></div>
+
+          <details open>
+            <summary>House rules</summary>
+            <div class="rules">
+              <label class="field inline"><span>Starting cards</span><input id="r-handSize" type="number" min="1" max="20" class="host-input"></label>
+              <label class="check"><input id="r-stacking" type="checkbox" class="host-input"> Stack draw cards (+2 on +2…)</label>
+              <label class="check"><input id="r-drawUntilPlayable" type="checkbox" class="host-input"> Draw until you can play</label>
+              <label class="check"><input id="r-sevenZero" type="checkbox" class="host-input"> 7 swaps hands, 0 rotates hands</label>
+              <label class="check" id="liar-toggle"><input id="r-liar" type="checkbox" class="host-input"> Liar mode (play face-down &amp; bluff)</label>
+              <label class="field inline"><span>Knock-out at (cards, 0 = off)</span><input id="r-mercyLimit" type="number" min="0" max="200" class="host-input"></label>
+            </div>
+          </details>
+
+          <details id="custom-cards-box">
+            <summary>Custom cards <span class="muted small">— design your own deck</span></summary>
+            <ul id="custom-list" class="custom-list"></ul>
+            <div class="custom-add host-only">
+              <select id="cc-kind">
+                <option value="wildDraw">Wild Draw +N</option>
+                <option value="draw">Coloured Draw +N (per colour)</option>
+                <option value="wildReverseDraw">Wild Reverse Draw +N</option>
+                <option value="skipAll">Skip Everyone (per colour)</option>
+                <option value="discardAll">Discard All (per colour)</option>
+                <option value="colorRoulette">Colour Roulette</option>
+              </select>
+              <label class="mini-field" id="cc-draw-wrap">+<input id="cc-draw" type="number" min="1" max="99" value="15"></label>
+              <label class="mini-field">×<input id="cc-count" type="number" min="1" max="20" value="4"></label>
+              <button id="btn-cc-add" class="btn">Add</button>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen hidden">
+    <header class="topbar">
+      <img class="logo tiny" src="assets/logo.png" alt="UNO Ultimate">
+      <div id="game-title" class="game-title"></div>
+      <div class="topbar-right">
+        <button id="btn-log" class="btn ghost small">Log</button>
+        <button id="btn-game-leave" class="btn ghost small">Leave</button>
+      </div>
+    </header>
+
+    <main class="arena">
+      <div class="rim">
+        <div class="felt">
+          <div id="opponents" class="opponents"></div>
+
+          <div class="table">
+            <svg id="dir-ring" class="dir-ring" viewBox="0 0 200 200" aria-hidden="true">
+              <defs><marker id="dir-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="currentColor"/></marker></defs>
+              <path d="M100 18 A82 82 0 0 1 182 100" marker-end="url(#dir-head)"/>
+              <path d="M100 182 A82 82 0 0 1 18 100" marker-end="url(#dir-head)"/>
+            </svg>
+            <div class="piles">
+              <div id="draw-pile" class="pile draw-pile" title="Draw a card"></div>
+              <div id="discard-pile" class="pile discard-pile"></div>
+            </div>
+            <div class="table-info">
+              <div id="color-indicator" class="color-ind"></div>
+              <div id="pending-indicator" class="pending hidden"></div>
+              <div id="side-indicator" class="side-badge hidden"></div>
+            </div>
+          </div>
+
+          <div id="status" class="status"></div>
+        </div>
+      </div>
+
+      <div class="player-area">
+        <div class="actions">
+          <button id="btn-draw" class="btn">Draw</button>
+          <button id="btn-pass" class="btn hidden">Pass</button>
+          <button id="btn-uno" class="btn uno">UNO</button>
+          <div id="catch-buttons" class="catch-buttons"></div>
+        </div>
+        <div id="hand" class="hand"></div>
+      </div>
+    </main>
+
+    <aside id="log-panel" class="log-panel">
+      <div class="log-head">Game log <button id="btn-log-close" class="btn ghost small">✕</button></div>
+      <ol id="log" class="log"></ol>
+    </aside>
+  </section>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div id="modal-box" class="modal-box"></div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="banner" class="banner"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="js/engine.bundle.js"></script>
+  <script src="js/net.js"></script>
+  <script src="js/themes.js"></script>
+  <script src="js/cards.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

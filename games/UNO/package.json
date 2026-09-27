@@ -1,0 +1,13 @@
+{
+  "name": "uno-ultimate",
+  "version": "2.0.0",
+  "description": "Multiplayer web UNO with pluggable game modes (Classic, Flip, No Mercy, Liar's) and themes. Runs fully in the browser; online play is peer-to-peer via PeerJS.",
+  "private": true,
+  "scripts": {
+    "build": "node tools/bundle.js",
+    "test": "node tests/simulate.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
