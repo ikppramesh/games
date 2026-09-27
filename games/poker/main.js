@@ -59,6 +59,25 @@
 
   render(); // draw the empty table immediately, before any game starts
 
+  // ---------- hand rankings cheat sheet ----------
+  // Docked beside the table on wide screens; a slide-over drawer otherwise.
+  const rankingsEl = document.getElementById('rankings');
+  const rankingsToggle = document.getElementById('rankingsToggle');
+  PokerRankings.mount(rankingsEl);
+  function setRankingsOpen(open) {
+    document.body.classList.toggle('rankings-open', open);
+    rankingsToggle.classList.toggle('active', open);
+  }
+  rankingsToggle.addEventListener('click', () => {
+    const wide = window.matchMedia('(min-width: 1200px) and (min-aspect-ratio: 6/5)').matches;
+    if (wide) document.body.classList.toggle('rankings-hidden');
+    else setRankingsOpen(!document.body.classList.contains('rankings-open'));
+  });
+  rankingsEl.querySelector('.rk-close').addEventListener('click', () => {
+    setRankingsOpen(false);
+    document.body.classList.add('rankings-hidden');
+  });
+
   // ---------- setup tabs ----------
   els.tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -382,6 +401,11 @@
     if (iAct) els.checkCallBtn.textContent = legal.canCheck ? 'Check' : `Call ${legal.callAmount}`;
     if (!iAct) closeRaiseRow();
     els.betRaiseBtn.textContent = state.currentBet > 0 ? 'Raise' : 'Bet';
+
+    const myCards = me && !me.folded && me.holeCards && me.holeCards[0]
+      ? me.holeCards.concat(state.community)
+      : null;
+    PokerRankings.highlight(rankingsEl, myCards);
 
     const logLines = state.log.slice(-10);
     els.log.innerHTML = logLines.map(l => `<div>${escapeHtml(l)}</div>`).join('');

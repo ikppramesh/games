@@ -10,10 +10,11 @@
   <div class="topbar">
     <a class="back" href="../../index.html">&larr; Game Room</a>
     <h1>♠️ Texas Hold'em</h1>
-    <span style="width:80px"></span>
+    <button class="rk-toggle" id="rankingsToggle" type="button">Hand Rankings</button>
   </div>
 
   <div class="layout">
+    <aside class="rankings" id="rankings" aria-label="Poker hand rankings"></aside>
     <div class="board-wrap">
       <div class="canvas-frame">
         <canvas id="tableCanvas" width="900" height="620"></canvas>
@@ -98,6 +99,7 @@
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="poker.js"></script>
   <script src="render.js"></script>
+  <script src="rankings.js"></script>
   <script src="net.js"></script>
   <script src="main.js"></script>
 </body>

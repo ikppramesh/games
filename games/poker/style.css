@@ -342,3 +342,141 @@ button{
   .hint{ font-size:0.7rem; }
   #log{ min-height:40px; }
 }
+
+/* ---------- hand rankings cheat sheet ---------- */
+.rk-toggle{
+  padding:6px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--panel-2);
+  color:var(--accent);
+  font-size:0.8rem;
+  font-weight:600;
+  white-space:nowrap;
+}
+@media (max-width: 520px){
+  .topbar{padding:10px 12px; gap:8px;}
+  .topbar h1{font-size:1rem;}
+  .rk-toggle{padding:5px 9px; font-size:0.72rem;}
+}
+.rk-toggle.active, .rk-toggle:hover{border-color:var(--accent);}
+.rankings{
+  flex:0 0 290px;
+  width:290px;
+  align-self:center;
+  max-height:100%;
+  overflow-y:auto;
+  background:linear-gradient(180deg, #211a15, var(--panel));
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 12px 36px rgba(0,0,0,0.45);
+  padding:14px 14px 10px;
+}
+body.rankings-hidden .rankings{display:none;}
+.rk-head{display:flex; align-items:center; justify-content:space-between;}
+.rk-head h2{margin:0; font-size:1rem; letter-spacing:0.02em;}
+.rk-close{
+  border:none;
+  background:transparent;
+  color:var(--muted);
+  font-size:1.3rem;
+  line-height:1;
+  padding:0 4px;
+}
+.rk-close:hover{color:var(--text);}
+.rk-intro, .rk-foot{
+  margin:6px 0 8px;
+  font-size:0.72rem;
+  line-height:1.35;
+  color:var(--muted);
+}
+.rk-foot{margin:6px 0 0;}
+.rk-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px;}
+.rk-row{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  grid-template-areas:"title title" "cards blurb";
+  column-gap:8px;
+  align-items:center;
+  padding:5px 7px;
+  border-radius:9px;
+  border:1px solid transparent;
+  transition:background 0.2s, border-color 0.2s;
+}
+.rk-row.current{
+  background:rgba(224,176,74,0.12);
+  border-color:rgba(224,176,74,0.65);
+  box-shadow:0 0 14px rgba(224,176,74,0.18);
+}
+.rk-title{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  grid-area:title;
+  font-size:0.74rem;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.03em;
+}
+.rk-num{
+  flex:0 0 auto;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(#d23a47, #9b1622);
+  color:#fff;
+  font-size:0.66rem;
+}
+.rk-you{
+  display:none;
+  margin-left:auto;
+  padding:1px 7px;
+  border-radius:999px;
+  background:var(--accent);
+  color:#2a1a05;
+  font-size:0.6rem;
+  letter-spacing:0.06em;
+}
+.rk-row.current .rk-you{display:inline-block;}
+.rk-cards{grid-area:cards; display:flex; gap:2px; margin:4px 0 0;}
+.mini-card{
+  width:22px;
+  height:30px;
+  border-radius:4px;
+  background:linear-gradient(135deg, #ffffff, #ece6d8);
+  box-shadow:0 1px 3px rgba(0,0,0,0.5);
+  color:#15161a;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-family:Georgia, "Times New Roman", serif;
+  font-weight:700;
+  line-height:1;
+}
+.mini-card.red{color:#c21a2b;}
+.mini-card.kicker{filter:brightness(0.62) saturate(0.6);}
+.mc-rank{font-size:0.72rem; letter-spacing:-0.04em;}
+.mc-suit{font-size:0.78rem; margin-top:1px;}
+.rk-blurb{grid-area:blurb; margin-top:4px; font-size:0.66rem; line-height:1.25; color:var(--muted);}
+
+/* narrower screens: the chart becomes a slide-over drawer */
+@media (max-width: 1199px), (max-aspect-ratio: 6/5){
+  .rankings{
+    position:fixed;
+    top:0;
+    left:0;
+    bottom:0;
+    z-index:50;
+    width:min(290px, 86vw);
+    max-height:none;
+    border-radius:0 14px 14px 0;
+    transform:translateX(-105%);
+    transition:transform 0.25s ease;
+  }
+  body.rankings-hidden .rankings{display:block;}
+  body.rankings-open .rankings{transform:translateX(0);}
+}
