@@ -35,7 +35,7 @@
       <p class="rk-intro">Make the best 5-card hand from your 2 cards + the 5 on the table. Higher beats lower.</p>
       <ol class="rk-list">
         ${HANDS.map(([key, title, blurb, cards], i) => `
-          <li class="rk-row" data-key="${key}">
+          <li class="rk-row" data-key="${key}" title="${title}: ${blurb}">
             <div class="rk-title"><span class="rk-num">${i + 1}</span>${title}<span class="rk-you">You</span></div>
             <div class="rk-cards">${cards.map(miniCard).join('')}</div>
             <div class="rk-blurb">${blurb}</div>

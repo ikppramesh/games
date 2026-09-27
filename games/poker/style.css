@@ -480,3 +480,54 @@ body.rankings-hidden .rankings{display:none;}
   body.rankings-hidden .rankings{display:block;}
   body.rankings-open .rankings{transform:translateX(0);}
 }
+
+/* ---------- wide screens: big table, slim corner panels ----------
+   Hand rankings tucks into the top-left corner and the game log into the
+   top-right, so the table gets nearly all of the width. */
+@media (min-width: 1200px) and (min-aspect-ratio: 6/5){
+  .layout{max-width:none; padding:10px 14px; gap:14px;}
+
+  .rankings{
+    flex:0 0 240px;
+    width:240px;
+    align-self:flex-start;
+    padding:10px 10px 8px;
+    border-radius:12px;
+  }
+  .rk-head h2{font-size:0.82rem;}
+  .rk-close{font-size:1.1rem;}
+  .rk-intro, .rk-foot, .rk-blurb{display:none;}
+  .rk-list{margin-top:6px; gap:1px;}
+  .rk-row{
+    grid-template-columns:auto 1fr;
+    grid-template-areas:"cards title";
+    column-gap:7px;
+    padding:3px 5px;
+    border-radius:7px;
+    cursor:help;
+  }
+  .rk-cards{margin:0; gap:1px;}
+  .mini-card{width:17px; height:23px; border-radius:3px;}
+  .mc-rank{font-size:0.56rem;}
+  .mc-suit{font-size:0.6rem; margin-top:0;}
+  .rk-title{font-size:0.6rem; gap:4px; letter-spacing:0.01em; white-space:nowrap;}
+  .rk-num{width:14px; height:14px; font-size:0.54rem;}
+  .rk-you{margin-left:0; font-size:0.5rem; padding:0 5px;}
+
+  #gamePanel{
+    flex:0 0 210px;
+    width:210px;
+    align-self:flex-start;
+    max-height:100%;
+    padding:10px;
+    gap:7px;
+    border-radius:12px;
+  }
+  #gamePanel h2{font-size:0.82rem;}
+  #handStatus{font-size:0.72rem;}
+  #turnStatus{font-size:0.78rem; padding:7px; min-height:0;}
+  #log{font-size:0.68rem; padding:6px 8px; min-height:0; max-height:260px;}
+  #leaveBtn{padding:6px; font-size:0.75rem;}
+  .action-bar{max-width:560px; padding:8px 12px; gap:6px;}
+  .act-btn{padding:9px;}
+}
