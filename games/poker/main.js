@@ -351,7 +351,10 @@
       hostTurnTimer = setTimeout(() => {
         if (!TABLE || TABLE.stage === 'showdown' || TABLE.actingId !== actor.id) return;
         const action = PK.botAction(TABLE, actor.id);
-        PK.applyAction(TABLE, actor.id, action);
+        // never let a rejected move stall the table: fall back to something legal
+        if (!PK.applyAction(TABLE, actor.id, action)) {
+          PK.applyAction(TABLE, actor.id, { kind: 'call' }) || PK.applyAction(TABLE, actor.id, { kind: 'check' }) || PK.applyAction(TABLE, actor.id, { kind: 'fold' });
+        }
         hostProcessTurn();
       }, 650 + Math.random() * 700);
     }
@@ -505,11 +508,19 @@
   function loop(now) {
     if (animating || now - lastFrame > 500) render();
     requestAnimationFrame(loop);
-
-  // the canvas fills its container - refit the table whenever that changes
-  new ResizeObserver(() => { PokerRender.resize(); render(); }).observe(canvas);
   }
   requestAnimationFrame(loop);
+
+  // The canvas fills its container - refit the table when that changes.
+  // One observer for the page's lifetime; the resize waits until the layout
+  // has settled (e.g. after opening/closing Hand Rankings) and is skipped
+  // when the size didn't really change - the browser just stretches the
+  // current frame in the meantime.
+  let resizeTimer = null;
+  new ResizeObserver(() => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (PokerRender.resize()) render(); }, 140);
+  }).observe(canvas);
 
   window.__PK_DEBUG = { getState: currentState, getTable: () => TABLE, getMode: () => mode, getMyId: () => myId };
 })();

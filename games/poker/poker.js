@@ -298,7 +298,14 @@
       return;
     }
     t.pendingActions = eligible.length;
-    t.actingId = firstActor ? firstActor.id : eligible[0].id;
+    // The first actor might already be all-in (e.g. a blind took their last
+    // chips) - start with the next player, in seat order, who can still act.
+    let actor = firstActor;
+    if (!actor || !eligible.includes(actor)) {
+      const order = actor ? [actor, ...seatOrderFrom(t, actor.seat)] : eligible;
+      actor = order.find(p => eligible.includes(p)) || eligible[0];
+    }
+    t.actingId = actor.id;
   }
 
   function isRoundOver(t) {

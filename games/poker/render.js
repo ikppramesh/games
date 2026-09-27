@@ -58,10 +58,14 @@
   }
 
   // match the canvas to its on-screen size and refit the table to it
+  // returns false (and does nothing) when the size hasn't really changed -
+  // rebuilding the table is expensive, so never do it needlessly
   function resize() {
     const rect = canvasEl.getBoundingClientRect();
     const cw = Math.max(1, rect.width), ch = Math.max(1, rect.height);
-    DPR = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (bgLayer && Math.abs(cw - VIEW.cw) < 0.5 && Math.abs(ch - VIEW.ch) < 0.5 && dpr === DPR) return false;
+    DPR = dpr;
     W = BASE_W * Math.max(1, Math.min(MAX_STRETCH, (cw / ch) / (BASE_W / H)));
     CX = W / 2;
     const extra = (W - BASE_W) / 2;
@@ -78,6 +82,7 @@
     canvasEl.height = Math.round(ch * DPR);
     bgLayer = null;
     sprites.clear();
+    return true;
   }
 
   // the whole visible canvas, in design units
@@ -112,8 +117,12 @@
     return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
   }
 
+  const noiseCache = new Map();
   function noiseCanvas(size, seed, spread) {
+    const key = `${size}:${seed}:${spread}`;
+    if (noiseCache.has(key)) return noiseCache.get(key);
     const c = document.createElement('canvas');
+    noiseCache.set(key, c);
     c.width = c.height = size;
     const x = c.getContext('2d');
     const img = x.createImageData(size, size);
@@ -208,15 +217,12 @@
     c.fillRect(...full);
     texture(c, noiseCanvas(128, 91, 60), 0.35, 'overlay');
 
-    // table casts a soft shadow on the floor
-    c.save();
-    c.shadowColor = 'rgba(0,0,0,0.85)';
-    c.shadowBlur = 46 * RES;
-    c.shadowOffsetY = 20 * RES;
+    // table casts a soft shadow on the floor (blurred at quarter resolution -
+    // a huge blur at full resolution is by far the slowest part of a rebuild)
+    softShadow(c, (sc) => { sc.beginPath(); ellipse(sc, RAIL); }, 46, 20, 0.85);
     c.beginPath(); ellipse(c, RAIL);
     c.fillStyle = '#120a06';
     c.fill();
-    c.restore();
 
     // padded leather rail
     c.save();
@@ -341,14 +347,11 @@
     c.font = `italic 11px ${SERIF}`;
     c.fillText('♠  ♥  ♦  ♣', CX, CY + 96);
     // the rail throws a soft shadow onto the felt
-    c.beginPath();
-    c.rect(full[0] - 50, full[1] - 50, full[2] + 100, full[3] + 100);
-    ellipse(c, FELT);
-    c.shadowColor = 'rgba(0,0,0,0.8)';
-    c.shadowBlur = 26 * RES;
-    c.shadowOffsetY = 7 * RES;
-    c.fillStyle = '#000';
-    c.fill('evenodd');
+    softShadow(c, (sc) => {
+      sc.beginPath();
+      sc.rect(full[0] - 50, full[1] - 50, full[2] + 100, full[3] + 100);
+      ellipse(sc, FELT);
+    }, 26, 7, 0.8, 'evenodd');
     c.restore();
 
     // overhead lamp + vignette
@@ -368,6 +371,27 @@
     c.fillRect(...full);
 
     return canvas;
+  }
+
+  // Draws only the blurred shadow of a shape, computed on a quarter-size
+  // canvas and scaled up: visually the same, many times cheaper.
+  function softShadow(c, path, blur, offY, alpha, rule) {
+    const q = 4;
+    const [x0, y0, w, h] = viewRect();
+    const L = document.createElement('canvas');
+    L.width = Math.max(1, Math.ceil(w * RES / q)); L.height = Math.max(1, Math.ceil(h * RES / q));
+    const sc = L.getContext('2d');
+    sc.setTransform(RES / q, 0, 0, RES / q, -x0 * RES / q, -y0 * RES / q);
+    sc.shadowColor = `rgba(0,0,0,${alpha})`;
+    sc.shadowBlur = blur * RES / q;
+    sc.shadowOffsetY = offY * RES / q;
+    // draw the shape far off-canvas so only its shadow lands in view
+    sc.translate(0, -100000);
+    sc.shadowOffsetY += 100000 * RES / q;
+    path(sc);
+    sc.fillStyle = '#000';
+    sc.fill(rule || 'nonzero');
+    c.drawImage(L, x0, y0, w, h);
   }
 
   // art-deco fans (Royale) or gold filigree scrolls (Elite) printed on the felt

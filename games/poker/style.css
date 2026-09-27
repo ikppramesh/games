@@ -593,3 +593,12 @@ body.rankings-hidden .rankings{display:none;}
 .rooms.high .room-tile b{font-family:Cinzel, Georgia, serif; font-size:0.95rem; letter-spacing:0.1em;}
 .room-note{font-size:0.72rem; color:var(--muted); margin:0;}
 body.serif .topbar h1, body.serif .panel h2{font-family:Cinzel, Georgia, serif; letter-spacing:0.08em;}
+
+/* play-money notice */
+.fun-note{
+  font-size:0.74rem; line-height:1.4; color:var(--text);
+  padding:8px 10px; border-radius:9px;
+  background:rgba(255,255,255,0.05); border:1px dashed var(--border);
+}
+.fun-note b{color:var(--accent);}
+.fun-note.small{font-size:0.66rem; color:var(--muted); text-align:center; padding:5px 8px;}
