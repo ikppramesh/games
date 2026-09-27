@@ -23,7 +23,7 @@
   const MAX_SPAN = 35; // longest - keeps the board readable instead of a tangle
 
   const TOKEN_COLORS = ['#f6c93b', '#4fd1c5', '#e05263', '#a78bfa'];
-  const TOKEN_NAMES = ['Batman', 'Robin', 'Batgirl', 'Nightwing'];
+  const TOKEN_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
   function squareToRowCol(n) {
     const idx = n - 1;
@@ -110,6 +110,8 @@
       moveSeq: 0,
       sixStreak: 0,
       turnNumber: 0,
+      theme: 'classic',   // board theme id (see themes.js) - picked by the host
+      colors: TOKEN_COLORS.slice(),
       ladders: board.ladders,
       snakes: board.snakes,
       log: []
@@ -124,12 +126,23 @@
   function addPlayer(t, id, name, isBot) {
     if (t.players.length >= MAX_PLAYERS) return null;
     if (t.players.some(p => p.id === id)) return t.players.find(p => p.id === id);
-    const color = TOKEN_COLORS[t.players.length];
+    const color = (t.colors || TOKEN_COLORS)[t.players.length];
     const label = name || TOKEN_NAMES[t.players.length];
     const p = newPlayer(id, label, isBot, color);
     t.players.push(p);
     addLog(t, `${p.name} joined the table.`);
     return p;
+  }
+
+  // switch theme (lobby only): recolour everyone, and rename computer
+  // players to the new theme's names
+  function setTheme(t, id, colors, botNames) {
+    t.theme = id;
+    if (colors) t.colors = colors.slice();
+    t.players.forEach((p, i) => {
+      if (colors) p.color = colors[i % colors.length];
+      if (p.isBot && botNames) p.name = botNames[i % botNames.length] + ' (CPU)';
+    });
   }
 
   function advanceTurn(t) {
@@ -222,7 +235,7 @@
         t.stage = 'finished';
         t.winner = player.id;
         won = true;
-        addLog(t, `🦇 ${player.name} reaches square 100 and saves Gotham!`);
+        addLog(t, `🏆 ${player.name} reaches square 100 and wins!`);
       }
     }
 
@@ -240,6 +253,7 @@
       players: t.players.map(p => ({ id: p.id, name: p.name, isBot: p.isBot, color: p.color, pos: p.pos, active: p.active, connected: p.connected })),
       currentIndex: t.currentIndex,
       stage: t.stage,
+      theme: t.theme,
       winner: t.winner,
       lastRoll: t.lastRoll,
       lastEvent: t.lastEvent,
@@ -253,6 +267,6 @@
 
   return {
     BOARD_SIZE, MAX_PLAYERS, TOKEN_COLORS, TOKEN_NAMES,
-    squareToRowCol, generateBoard, newTable, addPlayer, removePlayer, startGame, rollDice, serialize, addLog
+    squareToRowCol, generateBoard, newTable, addPlayer, setTheme, removePlayer, startGame, rollDice, serialize, addLog
   };
 });

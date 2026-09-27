@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-<title>Snakes & Ladders: Gotham</title>
+<title>Snakes & Ladders</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="topbar">
     <a class="back" href="../../index.html">&larr; Game Room</a>
-    <h1><span class="bat-emoji">🦇</span> Snakes &amp; Ladders: Gotham</h1>
+    <h1><span class="theme-icon" id="themeIcon">🎲</span> <span id="themeTitle">Snakes &amp; Ladders</span></h1>
     <span style="width:80px"></span>
   </div>
 
@@ -24,14 +24,18 @@
           <div class="pip ml"></div><div class="pip mc"></div><div class="pip mr"></div>
           <div class="pip bl"></div><div class="pip bc"></div><div class="pip br"></div>
         </div>
-        <button class="primary-btn roll-btn" id="rollBtn">Roll the Batarang Die</button>
+        <button class="primary-btn roll-btn" id="rollBtn">Roll the Die</button>
       </div>
-      <div class="hint" id="boardHint">Climb the ladders, dodge Gotham's snakes, race the Batmobile to square 100. A new board every game.</div>
+      <div class="hint" id="boardHint">Climb the ladders, dodge the snakes - first to square 100 wins. A new board every game.</div>
     </div>
 
     <!-- Setup panel -->
     <div class="panel" id="setupPanel">
-      <h2>Join the Fight</h2>
+      <h2>Play Snakes &amp; Ladders</h2>
+      <div class="theme-picker">
+        <div class="sub" id="themePickerLabel">Choose a board theme</div>
+        <div class="theme-options" id="themeOptions"></div>
+      </div>
       <div class="setup-tabs">
         <button class="tab-btn active" data-tab="host">Create Game</button>
         <button class="tab-btn" data-tab="join">Join Game</button>
@@ -40,7 +44,7 @@
 
       <div id="hostPanel" class="setup-panel">
         <label for="hostName">Your name</label>
-        <input type="text" id="hostName" maxlength="16" placeholder="Batman" />
+        <input type="text" id="hostName" maxlength="16" placeholder="Player 1" />
         <button class="primary-btn" id="createBtn">Create Table</button>
         <div class="room-code-box" id="roomCodeBox" hidden>
           <div class="sub">Share this code or link with friends</div>
@@ -60,7 +64,7 @@
 
       <div id="joinPanel" class="setup-panel" hidden>
         <label for="joinName">Your name</label>
-        <input type="text" id="joinName" maxlength="16" placeholder="Robin" />
+        <input type="text" id="joinName" maxlength="16" placeholder="Player 2" />
         <label for="joinCode">Table code</label>
         <input type="text" id="joinCode" maxlength="8" placeholder="e.g. AB12C" style="text-transform:uppercase" />
         <button class="primary-btn" id="joinBtn">Join Table</button>
@@ -87,6 +91,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="themes.js"></script>
   <script src="game.js"></script>
   <script src="render.js"></script>
   <script src="net.js"></script>

@@ -48,6 +48,58 @@
   let rollingAnim = null;
   let animating = false; // a move animation is playing (see render.js)
 
+  // ---------- board theme ----------
+  // The picker sets the theme for practice games and tables you host; guests
+  // always see the host's pick (it arrives in the game state).
+  const themeStore = {
+    get() { try { return localStorage.getItem('snl.theme'); } catch (e) { return null; } },
+    set(v) { try { localStorage.setItem('snl.theme', v); } catch (e) { /* ignore */ } }
+  };
+  let selectedTheme = SNLThemes.list[themeStore.get()] ? themeStore.get() : SNLThemes.DEFAULT;
+  const themeOptionsEl = document.getElementById('themeOptions');
+  themeOptionsEl.innerHTML = SNLThemes.order.map(id => {
+    const t = SNLThemes.list[id];
+    return `<button type="button" class="theme-opt" data-theme="${id}"><span class="ti">${t.icon}</span>${t.name}</button>`;
+  }).join('');
+  themeOptionsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.theme-opt');
+    if (!btn || btn.disabled) return;
+    selectedTheme = btn.dataset.theme;
+    themeStore.set(selectedTheme);
+    if (mode === 'host' && TABLE && TABLE.stage === 'waiting') {
+      const t = SNLThemes.get(selectedTheme);
+      SNL.setTheme(TABLE, selectedTheme, t.colors, t.botNames);
+      renderLobbyOrBroadcast();
+    }
+    applyTheme();
+  });
+
+  function activeTheme() {
+    if (TABLE) return TABLE.theme;
+    if (remoteState && remoteState.theme) return remoteState.theme;
+    return selectedTheme;
+  }
+
+  function applyTheme() {
+    const id = activeTheme();
+    const t = SNLThemes.get(id);
+    const root = document.documentElement.style;
+    root.setProperty('--accent', t.accent);
+    root.setProperty('--accent-dim', t.accentDim);
+    root.setProperty('--accent-text', t.accentText);
+    document.getElementById('themeIcon').textContent = t.icon;
+    document.getElementById('themeTitle').textContent = t.title;
+    document.title = t.title;
+    els.rollBtn.textContent = t.roll;
+    if (!gameStarted) els.boardHint.textContent = t.hint;
+    themeOptionsEl.querySelectorAll('.theme-opt').forEach(b => {
+      b.classList.toggle('active', b.dataset.theme === id);
+      b.disabled = mode === 'client';
+    });
+    document.getElementById('themePickerLabel').textContent = mode === 'client' ? "Board theme (the host's pick)" : 'Choose a board theme';
+  }
+  applyTheme();
+
   render(); // draw the empty board immediately, before any game starts
 
   // ---------- setup tabs ----------
@@ -88,7 +140,8 @@
         mode = 'host';
         myId = code;
         TABLE = SNL.newTable();
-        SNL.addPlayer(TABLE, myId, els.hostName.value.trim() || 'Batman', false);
+        SNL.setTheme(TABLE, selectedTheme, SNLThemes.get(selectedTheme).colors);
+        SNL.addPlayer(TABLE, myId, els.hostName.value.trim() || 'Player 1', false);
         els.createBtn.textContent = 'Table Created';
         els.roomCodeBox.hidden = false;
         els.roomCodeText.textContent = code;
@@ -115,7 +168,7 @@
   els.addBotBtn.addEventListener('click', () => {
     if (!TABLE || TABLE.players.length >= SNL.MAX_PLAYERS) return;
     botCounter += 1;
-    SNL.addPlayer(TABLE, 'bot-' + botCounter, SNL.TOKEN_NAMES[TABLE.players.length] + ' (CPU)', true);
+    SNL.addPlayer(TABLE, 'bot-' + botCounter, SNLThemes.get(TABLE.theme).botNames[TABLE.players.length] + ' (CPU)', true);
     renderLobbyOrBroadcast();
   });
 
@@ -170,6 +223,7 @@
       code,
       () => {
         mode = 'client';
+        applyTheme(); // lock the picker - the host chooses
         myId = SNLNet.myId;
         SNLNet.sendToHost({ type: 'hello', name: els.joinName.value.trim() || 'Player' });
         els.joinBtn.textContent = 'Connected!';
@@ -187,7 +241,9 @@
     if (data.type === 'state') {
       const prevRoll = remoteState && remoteState.lastRoll;
       const prevTurn = remoteState && remoteState.turnNumber;
+      const prevTheme = remoteState && remoteState.theme;
       remoteState = data.state;
+      if (remoteState.theme !== prevTheme) applyTheme();
       if (remoteState.stage === 'waiting') {
         els.joinStatusMsg.textContent = `Waiting for the host to start... (${remoteState.players.length} seated)`;
       } else if (!gameStarted) {
@@ -206,9 +262,12 @@
     mode = 'practice';
     myId = 'you';
     TABLE = SNL.newTable();
+    const theme = SNLThemes.get(selectedTheme);
+    SNL.setTheme(TABLE, selectedTheme, theme.colors);
     SNL.addPlayer(TABLE, myId, 'You', false);
     const n = Number(els.botCount.value);
-    for (let i = 1; i <= n; i++) SNL.addPlayer(TABLE, 'bot-' + i, SNL.TOKEN_NAMES[i] + ' (CPU)', true);
+    for (let i = 1; i <= n; i++) SNL.addPlayer(TABLE, 'bot-' + i, theme.botNames[i] + ' (CPU)', true);
+    applyTheme();
     startGameUI();
     SNL.startGame(TABLE);
     hostProcessTurn();
@@ -311,7 +370,7 @@
     const acting = state.players[state.currentIndex];
     if (state.stage === 'finished' && state.winner) {
       const w = state.players.find(p => p.id === state.winner);
-      els.turnStatus.textContent = `🦇 ${w ? w.name : 'Someone'} saved Gotham!`;
+      els.turnStatus.textContent = `${SNLThemes.get(activeTheme()).icon} ${SNLThemes.get(activeTheme()).win.replace('{name}', w ? w.name : 'Someone')}`;
     } else if (opponentGone) {
       els.turnStatus.textContent = 'Connection lost.';
     } else if (acting) {
@@ -341,7 +400,7 @@
 
   // ---------- canvas rendering (see render.js) ----------
   function render() {
-    SNLRender.draw(ctx, currentState(), myId, performance.now());
+    SNLRender.draw(ctx, currentState(), myId, performance.now(), activeTheme());
   }
 
   // keeps snake tongues and move animations running; unlocks the roll
