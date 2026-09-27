@@ -26,6 +26,9 @@
 
   function rankLabel(r) { return RANK_NAMES[r] || String(r); }
 
+  // chip amounts are shown as Indian Rupees with Indian digit grouping (₹1,00,000)
+  function rupees(n) { return '\u20b9' + Number(n || 0).toLocaleString('en-IN'); }
+
   // ---------- deck ----------
   function freshDeck() {
     const deck = [];
@@ -265,7 +268,7 @@
 
     t.stage = 'preflop';
     startBettingRound(t, activeOrder.length >= 2 ? (activeOrder[2 % activeOrder.length] || bbPlayer) : bbPlayer, true);
-    addLog(t, `Hand #${t.handNumber} - ${sbPlayer.name} posts SB ${t.smallBlind}, ${bbPlayer.name} posts BB ${t.bigBlind}.`);
+    addLog(t, `Hand #${t.handNumber} - ${sbPlayer.name} posts SB ${rupees(t.smallBlind)}, ${bbPlayer.name} posts BB ${rupees(t.bigBlind)}.`);
     return true;
   }
 
@@ -324,7 +327,7 @@
   function awardUncontested(t, winner) {
     winner.chips += t.pot;
     t.winners = [{ id: winner.id, name: winner.name, amount: t.pot, handName: null }];
-    addLog(t, `${winner.name} wins ${t.pot} chips (everyone else folded).`);
+    addLog(t, `${winner.name} wins ${rupees(t.pot)} (everyone else folded).`);
     t.pot = 0;
     t.stage = 'showdown';
     t.actingId = null;
@@ -357,7 +360,7 @@
       }
     }
     t.winners = Object.values(results);
-    for (const r of t.winners) addLog(t, `${r.name} wins ${r.amount} chips${r.handName ? ' with ' + r.handName : ''}.`);
+    for (const r of t.winners) addLog(t, `${r.name} wins ${rupees(r.amount)}${r.handName ? ' with ' + r.handName : ''}.`);
     t.pot = 0;
     t.stage = 'showdown';
     t.actingId = null;
@@ -408,7 +411,7 @@
       const amt = Math.min(toCall, p.chips);
       postBet(t, p, amt);
       p.lastAction = p.allIn ? 'calls all-in' : 'calls';
-      addLog(t, `${p.name} ${p.allIn ? 'calls all-in for ' + amt : 'calls ' + amt}.`);
+      addLog(t, `${p.name} ${p.allIn ? 'calls all-in for ' + rupees(amt) : 'calls ' + rupees(amt)}.`);
       t.pendingActions -= 1;
     } else if (action.kind === 'bet' || action.kind === 'raise' || action.kind === 'allin') {
       let targetTotal = action.kind === 'allin' ? p.betThisRound + p.chips : Math.max(action.amount || 0, t.currentBet + t.minRaise);
@@ -419,7 +422,7 @@
       postBet(t, p, delta);
       if (raiseSize > t.minRaise) t.minRaise = raiseSize;
       t.currentBet = Math.max(t.currentBet, p.betThisRound);
-      p.lastAction = p.allIn ? 'raises all-in to ' + p.betThisRound : (action.kind === 'bet' ? 'bets ' + p.betThisRound : 'raises to ' + p.betThisRound);
+      p.lastAction = p.allIn ? 'raises all-in to ' + rupees(p.betThisRound) : (action.kind === 'bet' ? 'bets ' + rupees(p.betThisRound) : 'raises to ' + rupees(p.betThisRound));
       addLog(t, `${p.name} ${p.lastAction}.`);
       // everyone else who isn't folded/all-in must act again
       t.pendingActions = contestingPlayers(t).filter(x => x.id !== p.id).length;
@@ -502,7 +505,7 @@
 
   return {
     SUITS, MAX_SEATS, STARTING_CHIPS, SMALL_BLIND, BIG_BLIND, CATEGORY_NAMES,
-    rankLabel, cardLabel, freshDeck, shuffle,
+    rankLabel, rupees, cardLabel, freshDeck, shuffle,
     rank5, compareRank, bestHand, handName, buildPots,
     newTable, addPlayer, removePlayer, dealHand, applyAction, legalActions,
     botAction, estimateStrength, serializeFor, checkForUncontested, addLog

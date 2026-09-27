@@ -19,7 +19,6 @@
 
   const SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
   const SERIF = 'Georgia, "Times New Roman", Times, serif';
-  const RED = '#c21a2b', BLACK = '#15161a';
 
   const COMMUNITY = { w: 50, h: 70, gap: 7 };
   const DEAL_MS = 520, BET_MS = 320, SWEEP_MS = 420, AWARD_MS = 750;
@@ -176,7 +175,7 @@
     return t + '…';
   }
 
-  function fmt(n) { return Number(n || 0).toLocaleString('en-US'); }
+  function fmt(n) { return '\u20b9' + Number(n || 0).toLocaleString('en-IN'); }
 
   // ---------- static background: room, rail, trim, felt, lighting ----------
   function buildBackground() {
@@ -394,13 +393,30 @@
     }
   }
 
+  // Black-and-gold deck: black suits in gold, red suits in rose gold, so
+  // flushes stay easy to read without breaking the theme.
+  const METALS = {
+    gold: ['#fff2bf', '#ecc65e', '#b8892a', '#f5d67f'],
+    rose: ['#ffe0cf', '#eea683', '#b86b4a', '#f6bea0']
+  };
+  function toneOf(suit) { return isRed(suit) ? 'rose' : 'gold'; }
+
+  // brushed-metal gradient across a box
+  function metal(c, tone, x0, y0, x1, y1) {
+    const g = c.createLinearGradient(x0, y0, x1, y1);
+    METALS[tone].forEach((col, i, a) => g.addColorStop(i / (a.length - 1), col));
+    return g;
+  }
+
+  // color: a CSS color, or a metal tone name ('gold' / 'rose')
   function drawSuit(c, suit, x, y, size, flip, color) {
     c.save();
     c.translate(x, y);
     if (flip) c.rotate(Math.PI);
     c.scale(size, size);
     suitPath(c, suit);
-    c.fillStyle = color || (isRed(suit) ? RED : BLACK);
+    const tone = color || toneOf(suit);
+    c.fillStyle = METALS[tone] ? metal(c, tone, -0.5, -0.5, 0.5, 0.5) : tone;
     c.fill();
     c.restore();
   }
@@ -424,14 +440,34 @@
     const r = Math.max(3, w * 0.08);
     roundRect(c, 0.5, 0.5, w - 1, h - 1, r);
     const g = c.createLinearGradient(0, 0, w, h);
-    g.addColorStop(0, '#ffffff');
-    g.addColorStop(1, '#eee8da');
+    g.addColorStop(0, '#2b2b2f');
+    g.addColorStop(0.45, '#121214');
+    g.addColorStop(1, '#050506');
     c.fillStyle = g;
     c.fill();
+    // glossy lacquer sheen
+    c.save();
+    c.clip();
+    const sheen = c.createLinearGradient(0, 0, w * 0.7, h * 0.7);
+    sheen.addColorStop(0, 'rgba(255,255,255,0.13)');
+    sheen.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+    sheen.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = sheen;
+    c.fillRect(0, 0, w, h);
+    c.restore();
     c.lineWidth = 1;
-    c.strokeStyle = 'rgba(0,0,0,0.3)';
+    c.strokeStyle = 'rgba(214,176,92,0.6)';
     c.stroke();
     return r;
+  }
+
+  // thin gold rule just inside the edge
+  function innerBorder(c, w, h, r, tone) {
+    const m = Math.max(2, w * 0.045);
+    roundRect(c, m, m, w - 2 * m, h - 2 * m, Math.max(1.5, r * 0.6));
+    c.strokeStyle = metal(c, tone, 0, 0, w, h);
+    c.lineWidth = 0.7;
+    c.stroke();
   }
 
   function crown(c, x, y, cw, ch, rank, trim) {
@@ -455,12 +491,9 @@
       c.lineTo(x + cw / 2, y + ch / 2);
     }
     c.closePath();
-    c.fillStyle = '#e2b340';
+    c.fillStyle = metal(c, 'gold', x - cw / 2, y - ch / 2, x + cw / 2, y + ch / 2);
     c.fill();
-    c.lineWidth = 0.8;
-    c.strokeStyle = trim;
-    c.stroke();
-    c.fillStyle = trim;
+    c.fillStyle = '#0b0b0c';
     for (const dx of [-cw / 4, 0, cw / 4]) {
       c.beginPath();
       c.arc(x + dx, y + ch * 0.25, Math.max(0.8, cw * 0.06), 0, Math.PI * 2);
@@ -469,19 +502,20 @@
   }
 
   function paintFace(c, w, h, card) {
-    cardBase(c, w, h);
-    const color = isRed(card.suit) ? RED : BLACK;
+    const r = cardBase(c, w, h);
+    const tone = toneOf(card.suit);
     const label = rankLabel(card.rank);
-    c.fillStyle = color;
+    innerBorder(c, w, h, r, tone);
     c.textAlign = 'center';
     c.textBaseline = 'alphabetic';
 
     if (w < 42) {
-      // compact deck style for small opponent cards: big index + big suit
-      c.font = `bold ${Math.round(h * 0.34)}px ${SERIF}`;
-      fitText(c, label, w * 0.3, h * 0.34, w * 0.5);
-      drawSuit(c, card.suit, w * 0.3, h * 0.49, h * 0.18);
-      drawSuit(c, card.suit, w * 0.64, h * 0.74, h * 0.36);
+      // compact style for small opponent cards: big index + big suit
+      c.font = `bold ${Math.round(h * 0.32)}px ${SERIF}`;
+      c.fillStyle = metal(c, tone, 0, h * 0.08, 0, h * 0.34);
+      fitText(c, label, w * 0.32, h * 0.34, w * 0.46);
+      drawSuit(c, card.suit, w * 0.32, h * 0.49, h * 0.17);
+      drawSuit(c, card.suit, w * 0.63, h * 0.73, h * 0.34);
       return;
     }
 
@@ -489,33 +523,25 @@
     for (const flip of [false, true]) {
       c.save();
       if (flip) { c.translate(w, h); c.rotate(Math.PI); }
-      c.fillStyle = color;
-      c.font = `bold ${Math.round(h * 0.19)}px ${SERIF}`;
-      fitText(c, label, w * 0.13, h * 0.2, w * 0.2);
-      drawSuit(c, card.suit, w * 0.13, h * 0.29, h * 0.1);
+      c.font = `bold ${Math.round(h * 0.18)}px ${SERIF}`;
+      c.fillStyle = metal(c, tone, 0, h * 0.05, 0, h * 0.21);
+      fitText(c, label, w * 0.16, h * 0.21, w * 0.18);
+      drawSuit(c, card.suit, w * 0.16, h * 0.3, h * 0.095);
       c.restore();
     }
 
     if (card.rank === 14) {
-      drawSuit(c, card.suit, w / 2, h / 2, h * (card.suit === 'S' ? 0.46 : 0.36));
-      if (card.suit === 'S') {
-        c.beginPath();
-        c.ellipse(w / 2, h / 2 + h * 0.02, w * 0.3, h * 0.27, 0, 0, Math.PI * 2);
-        c.strokeStyle = 'rgba(0,0,0,0.25)';
-        c.lineWidth = 0.6;
-        c.stroke();
-      }
+      drawSuit(c, card.suit, w / 2, h / 2, h * (card.suit === 'S' ? 0.44 : 0.36));
     } else if (card.rank >= 11) {
-      const fx = w * 0.23, fy = h * 0.15, fw = w * 0.54, fh = h * 0.7;
-      const trim = isRed(card.suit) ? '#b0182a' : '#1f3f8f';
+      const fx = w * 0.25, fy = h * 0.16, fw = w * 0.5, fh = h * 0.68;
+      const trim = metal(c, tone, fx, fy, fx + fw, fy + fh);
       roundRect(c, fx, fy, fw, fh, 2);
       const fg = c.createLinearGradient(fx, fy, fx + fw, fy + fh);
-      fg.addColorStop(0, '#fcecc0');
-      fg.addColorStop(0.5, '#f3d488');
-      fg.addColorStop(1, '#e6bb5e');
+      fg.addColorStop(0, '#26221a');
+      fg.addColorStop(1, '#0c0b08');
       c.fillStyle = fg;
       c.fill();
-      c.lineWidth = 1.1;
+      c.lineWidth = 0.9;
       c.strokeStyle = trim;
       c.stroke();
       c.save();
@@ -524,32 +550,26 @@
       for (const flip of [false, true]) {
         c.save();
         if (flip) { c.translate(w, h); c.rotate(Math.PI); }
-        crown(c, w / 2, fy + fh * 0.15, fw * 0.5, fh * 0.14, card.rank, trim);
-        c.fillStyle = trim;
+        crown(c, w / 2, fy + fh * 0.15, fw * 0.5, fh * 0.14, card.rank, '#0b0b0c');
         c.font = `bold ${Math.round(fh * 0.27)}px ${SERIF}`;
+        c.fillStyle = metal(c, tone, 0, fy + fh * 0.24, 0, fy + fh * 0.46);
         c.fillText(label, w / 2, fy + fh * 0.46);
-        drawSuit(c, card.suit, fx + fw * 0.18, fy + fh * 0.1, fh * 0.1);
         c.restore();
       }
       c.beginPath();
       c.moveTo(fx, fy + fh * 0.56);
       c.lineTo(fx + fw, fy + fh * 0.44);
       c.strokeStyle = trim;
-      c.globalAlpha = 0.5;
-      c.lineWidth = 0.7;
-      c.stroke();
-      c.restore();
-      roundRect(c, fx + 2, fy + 2, fw - 4, fh - 4, 1.5);
-      c.strokeStyle = trim;
-      c.globalAlpha = 0.35;
+      c.globalAlpha = 0.6;
       c.lineWidth = 0.6;
       c.stroke();
+      c.restore();
       c.globalAlpha = 1;
     } else {
-      const cols = [w * 0.34, w * 0.5, w * 0.66];
-      const top = h * 0.21, bottom = h * 0.79;
+      const cols = [w * 0.35, w * 0.5, w * 0.65];
+      const top = h * 0.22, bottom = h * 0.78;
       for (const [col, row] of PIPS[card.rank]) {
-        drawSuit(c, card.suit, cols[col], lerp(top, bottom, row), h * 0.14, row > 0.5);
+        drawSuit(c, card.suit, cols[col], lerp(top, bottom, row), h * 0.13, row > 0.5);
       }
     }
   }
@@ -557,17 +577,12 @@
   function paintBack(c, w, h) {
     const r = cardBase(c, w, h);
     const m = Math.max(2.5, w * 0.08);
-    roundRect(c, m, m, w - 2 * m, h - 2 * m, r * 0.6);
-    const g = c.createLinearGradient(0, 0, w, h);
-    g.addColorStop(0, '#a3202d');
-    g.addColorStop(1, '#690e18');
-    c.fillStyle = g;
-    c.fill();
     c.save();
+    roundRect(c, m, m, w - 2 * m, h - 2 * m, r * 0.6);
     c.clip();
-    c.strokeStyle = 'rgba(255,255,255,0.22)';
-    c.lineWidth = 0.7;
-    const step = Math.max(4, w * 0.14);
+    c.strokeStyle = 'rgba(214,176,92,0.3)';
+    c.lineWidth = 0.6;
+    const step = Math.max(4, w * 0.13);
     c.beginPath();
     for (let i = -h; i < w + h; i += step) {
       c.moveTo(i, 0); c.lineTo(i + h, h);
@@ -575,17 +590,17 @@
     }
     c.stroke();
     c.beginPath();
-    c.ellipse(w / 2, h / 2, w * 0.2, h * 0.15, 0, 0, Math.PI * 2);
-    c.fillStyle = '#7a1420';
+    c.ellipse(w / 2, h / 2, w * 0.22, h * 0.16, 0, 0, Math.PI * 2);
+    c.fillStyle = '#0b0b0c';
     c.fill();
-    c.strokeStyle = 'rgba(240,200,120,0.85)';
-    c.lineWidth = 0.8;
+    c.strokeStyle = metal(c, 'gold', 0, 0, w, h);
+    c.lineWidth = 0.9;
     c.stroke();
-    drawSuit(c, 'S', w / 2, h / 2, h * 0.14, false, '#f0c878');
+    drawSuit(c, 'S', w / 2, h / 2, h * 0.15, false, 'gold');
     c.restore();
     roundRect(c, m, m, w - 2 * m, h - 2 * m, r * 0.6);
-    c.strokeStyle = 'rgba(240,200,120,0.7)';
-    c.lineWidth = 0.8;
+    c.strokeStyle = metal(c, 'gold', 0, 0, w, h);
+    c.lineWidth = 0.9;
     c.stroke();
   }
 

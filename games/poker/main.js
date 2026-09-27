@@ -159,7 +159,7 @@
     els.lobbyList.innerHTML = TABLE.players.map(p => `
       <div class="lobby-row">
         <span>${escapeHtml(p.name)}${p.id === myId ? ' (you)' : ''}</span>
-        <span class="bot-tag">${p.isBot ? 'Computer &middot; ' : ''}${p.chips} chips</span>
+        <span class="bot-tag">${p.isBot ? 'Computer &middot; ' : ''}${PK.rupees(p.chips)}</span>
       </div>`).join('');
     els.startTableBtn.disabled = TABLE.players.length < 2;
     els.addBotBtn.disabled = TABLE.players.length >= PK.MAX_SEATS;
@@ -319,10 +319,10 @@
     els.raiseSlider.min = min;
     els.raiseSlider.max = max;
     els.raiseSlider.value = Math.min(max, min);
-    els.raiseAmount.textContent = els.raiseSlider.value;
+    els.raiseAmount.textContent = PK.rupees(els.raiseSlider.value);
     els.raiseRow.hidden = false;
   }
-  els.raiseSlider.addEventListener('input', () => { els.raiseAmount.textContent = els.raiseSlider.value; });
+  els.raiseSlider.addEventListener('input', () => { els.raiseAmount.textContent = PK.rupees(els.raiseSlider.value); });
 
   els.foldBtn.addEventListener('click', () => { submitAction({ kind: 'fold' }); closeRaiseRow(); });
   els.checkCallBtn.addEventListener('click', () => {
@@ -378,12 +378,12 @@
     const state = currentState();
     if (!state) return;
     els.handStatus.textContent = `Hand #${state.handNumber}`;
-    els.potInfo.textContent = `Pot: ${state.pot}`;
+    els.potInfo.textContent = `Pot: ${PK.rupees(state.pot)}`;
 
     const me = state.players.find(p => p.id === myId);
     const acting = state.players.find(p => p.id === state.actingId);
     if (state.stage === 'showdown' && state.winners.length) {
-      els.turnStatus.textContent = state.winners.map(w => `${w.name} +${w.amount}${w.handName ? ' (' + w.handName + ')' : ''}`).join(', ');
+      els.turnStatus.textContent = state.winners.map(w => `${w.name} +${PK.rupees(w.amount)}${w.handName ? ' (' + w.handName + ')' : ''}`).join(', ');
     } else if (opponentGone) {
       els.turnStatus.textContent = 'Connection lost.';
     } else if (acting) {
@@ -398,7 +398,7 @@
     els.foldBtn.disabled = !iAct;
     els.checkCallBtn.disabled = !iAct;
     els.betRaiseBtn.disabled = !iAct || (legal && !legal.canBetOrRaise);
-    if (iAct) els.checkCallBtn.textContent = legal.canCheck ? 'Check' : `Call ${legal.callAmount}`;
+    if (iAct) els.checkCallBtn.textContent = legal.canCheck ? 'Check' : `Call ${PK.rupees(legal.callAmount)}`;
     if (!iAct) closeRaiseRow();
     els.betRaiseBtn.textContent = state.currentBet > 0 ? 'Raise' : 'Bet';
 
