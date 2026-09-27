@@ -27,7 +27,7 @@
       <div class="setup-tabs">
         <button class="tab-btn active" data-tab="host">Create Game</button>
         <button class="tab-btn" data-tab="join">Join Game</button>
-        <button class="tab-btn" data-tab="practice">Practice</button>
+        <button class="tab-btn" data-tab="practice">Vs Computer</button>
       </div>
 
       <div id="hostPanel" class="setup-panel">
@@ -54,8 +54,15 @@
       </div>
 
       <div id="practicePanel" class="setup-panel" hidden>
-        <p class="hint" style="margin:4px 0 0;">Play both sides yourself on this device &mdash; useful for trying the game before inviting a friend.</p>
-        <button class="primary-btn" id="practiceBtn">Start Practice Game</button>
+        <p class="hint" style="margin:4px 0 0;">Play against the computer, or pass one device between two players.</p>
+        <label>Computer difficulty</label>
+        <div class="difficulty" id="difficulty">
+          <button type="button" class="diff-btn" data-level="easy">Easy</button>
+          <button type="button" class="diff-btn active" data-level="medium">Medium</button>
+          <button type="button" class="diff-btn" data-level="hard">Hard</button>
+        </div>
+        <button class="primary-btn" id="cpuBtn">Play vs Computer</button>
+        <button class="secondary-btn" id="practiceBtn" style="margin-top:8px;">Pass &amp; Play (2 players, 1 device)</button>
       </div>
     </div>
 

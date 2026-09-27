@@ -16,6 +16,8 @@
     createBtn: document.getElementById('createBtn'),
     joinBtn: document.getElementById('joinBtn'),
     practiceBtn: document.getElementById('practiceBtn'),
+    cpuBtn: document.getElementById('cpuBtn'),
+    difficulty: document.getElementById('difficulty'),
     roomCodeBox: document.getElementById('roomCodeBox'),
     roomCodeText: document.getElementById('roomCodeText'),
     roomLink: document.getElementById('roomLink'),
@@ -36,7 +38,9 @@
     leaveBtn: document.getElementById('leaveBtn')
   };
 
-  let mode = null; // 'practice' | 'host' | 'client'
+  let mode = null; // 'practice' (pass & play) | 'cpu' (vs computer) | 'host' | 'client'
+  let cpuLevel = 'medium';
+  let botTurn = null; // the computer's shot in progress: {phase, start, plan, fromX}
   let opponentLeft = false;
   let inputAttached = false;
   let frameCount = 0;
@@ -155,17 +159,104 @@
     }
   }
 
-  // ---------- practice flow ----------
+  // ---------- practice flow (pass & play) ----------
   els.practiceBtn.addEventListener('click', () => {
     mode = 'practice';
     SB.resetMatch('Player 1', 'Player 2');
     startGameUI();
   });
 
+  // ---------- vs computer ----------
+  els.difficulty.addEventListener('click', (e) => {
+    const btn = e.target.closest('.diff-btn');
+    if (!btn) return;
+    cpuLevel = btn.dataset.level;
+    els.difficulty.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+
+  els.cpuBtn.addEventListener('click', () => {
+    mode = 'cpu';
+    botTurn = null;
+    const label = cpuLevel[0].toUpperCase() + cpuLevel.slice(1);
+    SB.resetMatch('You', `Computer (${label})`);
+    startGameUI();
+  });
+
+  // How the computer plays each level: how often it tries to knock your
+  // puck off, how precisely it hits its power and angle, and which zone
+  // it goes for when drawing to score.
+  const BOT_LEVELS = {
+    easy:   { knock: 0.1,  powerErr: 0.075, angleErr: 0.05,  zones: ['A', 'B', 'C'] },
+    medium: { knock: 0.35, powerErr: 0.04,  angleErr: 0.022, zones: ['A', 'A', 'B'] },
+    hard:   { knock: 0.65, powerErr: 0.013, angleErr: 0.007, zones: ['A'] }
+  };
+
+  // standard normal sample (Box-Muller) - the size of each level's mistakes
+  function gauss() { return Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random()); }
+
+  // Plans a shot straight up a chosen lane (the computer slides its puck
+  // sideways first, just like the ◀ ▶ buttons): either draw into a scoring
+  // zone through a clear lane, or fire hard at your best puck to knock it off.
+  function planBotShot() {
+    const s = SB.state, R = SB.PUCK_R, lvl = BOT_LEVELS[cpuLevel];
+    const minX = SB.RAIL_L + R + 4, maxX = SB.RAIL_R - R - 4;
+    const laneClear = (x, targetY, ignore) => s.pucks.every(p =>
+      p === ignore || p.y < targetY - R * 2 || Math.abs(p.x - x) > R * 2 + 3);
+
+    const mine = s.pucks.filter(p => p.owner === 1 && SB.zoneValueAt(p.y) > 0)
+      .sort((a, b) => SB.zoneValueAt(b.y) - SB.zoneValueAt(a.y) || a.y - b.y);
+    if (mine.length && Math.random() < lvl.knock) {
+      const t = mine.find(p => laneClear(p.x, p.y, p));
+      if (t) return { x: t.x, power: 1 };
+    }
+
+    const zoneKeys = lvl.zones.slice().sort(() => Math.random() - 0.5).concat(['A', 'B', 'C']);
+    for (const key of zoneKeys) {
+      const z = SB['ZONE_' + key];
+      const targetY = (z.top + z.bottom) / 2 + (key === 'A' ? 8 : 0);
+      const prefer = SB.W / 2 + (Math.random() - 0.5) * 160;
+      const lanes = [];
+      for (let x = minX; x <= maxX; x += 8) lanes.push(x);
+      lanes.sort((a, b) => Math.abs(a - prefer) - Math.abs(b - prefer));
+      const x = lanes.find(lx => laneClear(lx, targetY - R) &&
+        s.pucks.every(p => Math.hypot(p.x - lx, p.y - targetY) > R * 2 + 2));
+      if (x != null) return { x, power: (SB.START_Y - targetY) / SB.MAX_TRAVEL };
+    }
+    // everything's blocked: blast the nearest puck in the way
+    return { x: s.aimX[2], power: 1 };
+  }
+
+  // runs the computer's turn over a few frames so you can watch it:
+  // think -> slide to its lane -> show aim + gauge -> shoot
+  function runBot(now) {
+    const s = SB.state;
+    if (mode !== 'cpu' || s.currentShooter !== 2 || s.simulating || s.matchOver) { botTurn = null; SB._botAim = null; return; }
+    if (!botTurn) botTurn = { phase: 'think', start: now };
+    const t = now - botTurn.start;
+    if (botTurn.phase === 'think' && t > 600) {
+      botTurn = { phase: 'slide', start: now, plan: planBotShot(), fromX: s.aimX[2] };
+    } else if (botTurn.phase === 'slide') {
+      const k = Math.min(1, t / 550);
+      s.aimX[2] = botTurn.fromX + (botTurn.plan.x - botTurn.fromX) * (1 - Math.pow(1 - k, 3));
+      if (k >= 1) {
+        const lvl = BOT_LEVELS[cpuLevel];
+        const power = Math.max(0.3, Math.min(1, botTurn.plan.power + gauss() * lvl.powerErr));
+        const angle = -Math.PI / 2 + gauss() * lvl.angleErr;
+        SB._botAim = { angle, power, startTs: now };
+        botTurn = { phase: 'aim', start: now, plan: botTurn.plan };
+      }
+    } else if (botTurn.phase === 'aim' && t > 1000) {
+      const { angle, power } = SB._botAim;
+      SB._botAim = null;
+      botTurn = null;
+      SB.shoot({ angle, power });
+    }
+  }
+
   // ---------- shared game UI ----------
   function myPlayerId() {
     if (mode === 'practice') return SB.state.currentShooter;
-    if (mode === 'host') return 1;
+    if (mode === 'host' || mode === 'cpu') return 1;
     if (mode === 'client') return 2;
     return null;
   }
@@ -244,12 +335,14 @@
       els.turnStatus.textContent = 'Opponent left the game.';
     } else if (s.matchOver) {
       els.turnStatus.textContent = s.winner
-        ? `🏆 ${s.winner === 1 ? s.p1Name : s.p2Name} wins the match!`
+        ? (() => { const n = s.winner === 1 ? s.p1Name : s.p2Name; return n === 'You' ? '🏆 You win the match!' : `🏆 ${n} wins the match!`; })()
         : `It's a tie!`;
     } else if (s.simulating) {
       els.turnStatus.textContent = 'Puck sliding...';
     } else if (SB._charging) {
       els.turnStatus.textContent = '💪 Tap the table to set your power!';
+    } else if (mode === 'cpu' && s.currentShooter === 2) {
+      els.turnStatus.textContent = '🤖 Computer is lining up a shot...';
     } else {
       const name = s.currentShooter === 1 ? s.p1Name : s.p2Name;
       const isMe = mode === 'practice' || myPlayerId() === s.currentShooter;
@@ -273,7 +366,8 @@
     const dt = lastTs ? Math.min((ts - lastTs) / 1000, 0.033) : 0;
     lastTs = ts;
 
-    const isAuthority = mode === 'practice' || mode === 'host';
+    const isAuthority = mode === 'practice' || mode === 'host' || mode === 'cpu';
+    if (mode === 'cpu') runBot(ts);
     if (isAuthority && SB.state.simulating) {
       SB.tick(dt);
       frameCount++;

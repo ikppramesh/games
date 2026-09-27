@@ -101,6 +101,8 @@
     W, H, RAIL_L, RAIL_R, PUCK_R, START_Y, FOUL_LINE_Y, OFF_TOP_Y,
     ZONE_A, ZONE_B, ZONE_C, PUCKS_PER_PLAYER_PER_ROUND, WIN_SCORE,
     PLAYER_COLOR,
+    MAX_TRAVEL: MAX_PULL * DIST_PER_PULL, // how far a 100%-power shot slides on an empty table
+    zoneValueAt,
     state: freshState(),
     authority: false,
     canvas: null,
@@ -108,6 +110,7 @@
     _puckId: 1,
     _dragging: null,      // {startX,startY,curX,curY} - drag-to-aim phase
     _charging: null,      // {angle,startTs} - power meter phase, after aim is locked
+    _botAim: null,        // {angle,power,startTs} - the computer's aim/power, shown before it shoots
     _trails: {},           // puckId -> [{x,y}]
     _confetti: [],
     _confettiTs: 0,
@@ -132,6 +135,7 @@
       this._prevMatchOver = false;
       this._dragging = null;
       this._charging = null;
+      this._botAim = null;
     },
 
     addLog(msg) {
@@ -271,7 +275,8 @@
         s.winner = s.scores[1] === s.scores[2]
           ? null
           : (s.scores[1] > s.scores[2] ? 1 : 2);
-        this.addLog(s.winner ? `${s.winner === 1 ? s.p1Name : s.p2Name} wins!` : `It's a tie!`);
+        const winnerName = s.winner === 1 ? s.p1Name : s.p2Name;
+        this.addLog(s.winner ? (winnerName === 'You' ? 'You win!' : `${winnerName} wins!`) : `It's a tie!`);
         return;
       }
 
@@ -479,6 +484,17 @@
       }
 
       // your turn: the shooter's end of the table glows in your colour
+      // the computer lining up its shot: aim line + gauge filling to its power
+      if (this._botAim) {
+        const owner = s.currentShooter;
+        const b = this._botAim;
+        const fill = Math.min(1, (performance.now() - b.startTs) / 650);
+        drawDirectionLine(ctx, s.aimX[owner], START_Y, b.angle, AIM_PREVIEW_LEN, PLAYER_COLOR[owner], { alpha: 0.55 });
+        const sx = toScreenX(s.aimX[owner], START_Y);
+        const side = s.aimX[owner] > CX ? -1 : 1;
+        drawPowerMeter(ctx, sx + side * 52, START_Y, b.power * fill, PLAYER_COLOR[owner], 'CPU');
+      }
+
       if (opts.myTurn && !s.simulating && !s.matchOver) {
         const glow = ctx.createLinearGradient(0, H, 0, H - 150);
         glow.addColorStop(0, PLAYER_COLOR[s.currentShooter]);
@@ -668,7 +684,7 @@
 
   // The bouncing strength gauge: a brushed-metal housing with a
   // green-amber-red scale, a glowing fill and a needle, plus the % and TAP cue.
-  function drawPowerMeter(ctx, sx, sy, value, color) {
+  function drawPowerMeter(ctx, sx, sy, value, color, label) {
     const w = 26, h = 150;
     const x0 = sx - w / 2, yBottom = sy + 6, yTop = yBottom - h;
 
@@ -734,7 +750,7 @@
     ctx.fillText(`${Math.round(value * 100)}%`, sx, yTop - 14);
     ctx.font = 'bold 12px -apple-system, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = color;
-    ctx.fillText('TAP!', sx, yBottom + 22);
+    ctx.fillText(label || 'TAP!', sx, yBottom + 22);
     ctx.shadowBlur = 0;
   }
 

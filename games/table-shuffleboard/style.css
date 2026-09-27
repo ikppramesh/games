@@ -352,3 +352,16 @@ button{
 }
 .zone-legend span{display:flex;align-items:center;gap:4px;}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+/* computer difficulty picker */
+.difficulty{display:flex; gap:6px;}
+.diff-btn{
+  flex:1;
+  padding:8px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:0.85rem;
+}
+.diff-btn.active{border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset;}
