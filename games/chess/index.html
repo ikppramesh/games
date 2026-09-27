@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Chess: Royal Armies</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../../index.html">&larr; Game Room</a>
+    <h1>♞ Chess: Royal Armies</h1>
+    <button class="icon-btn" id="soundBtn" type="button" title="Sound on/off">🔊</button>
+  </div>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <div class="canvas-frame">
+        <canvas id="boardCanvas"></canvas>
+        <div class="banner" id="banner" hidden></div>
+      </div>
+    </div>
+
+    <!-- Setup panel -->
+    <div class="panel" id="setupPanel">
+      <h2>Play Chess</h2>
+      <p class="cast">Every piece is a character: <b>Soldier</b> (pawn), <b>Horse</b> (knight), <b>Camel</b> (bishop), <b>Elephant</b> (rook), <b>Queen</b> and <b>King</b>.</p>
+      <div class="setup-tabs">
+        <button class="tab-btn active" data-tab="cpu">Vs Computer</button>
+        <button class="tab-btn" data-tab="host">Create Game</button>
+        <button class="tab-btn" data-tab="join">Join Game</button>
+      </div>
+
+      <div id="cpuPanel" class="setup-panel">
+        <label>Difficulty</label>
+        <div class="choice" id="levelChoice">
+          <button type="button" class="choice-btn" data-v="easy">Easy</button>
+          <button type="button" class="choice-btn active" data-v="medium">Medium</button>
+          <button type="button" class="choice-btn" data-v="hard">Hard</button>
+        </div>
+        <label>Play as</label>
+        <div class="choice" id="sideChoice">
+          <button type="button" class="choice-btn active" data-v="w">Ivory (white)</button>
+          <button type="button" class="choice-btn" data-v="b">Ebony (black)</button>
+          <button type="button" class="choice-btn" data-v="r">Random</button>
+        </div>
+        <button class="primary-btn" id="cpuBtn">Play vs Computer</button>
+        <button class="secondary-btn" id="passBtn">Pass &amp; Play (2 players, 1 device)</button>
+      </div>
+
+      <div id="hostPanel" class="setup-panel" hidden>
+        <label for="hostName">Your name</label>
+        <input type="text" id="hostName" maxlength="16" placeholder="Player 1" />
+        <label>You play</label>
+        <div class="choice" id="hostSideChoice">
+          <button type="button" class="choice-btn active" data-v="w">Ivory (white)</button>
+          <button type="button" class="choice-btn" data-v="b">Ebony (black)</button>
+        </div>
+        <button class="primary-btn" id="createBtn">Create Game</button>
+        <div class="room-code-box" id="roomCodeBox" hidden>
+          <div class="sub">Share this code or link with your opponent</div>
+          <div class="code" id="roomCodeText">-----</div>
+          <div class="link-row">
+            <input type="text" id="roomLink" readonly />
+            <button id="copyLinkBtn">Copy</button>
+          </div>
+        </div>
+        <p class="hint" id="hostStatusMsg"></p>
+      </div>
+
+      <div id="joinPanel" class="setup-panel" hidden>
+        <label for="joinName">Your name</label>
+        <input type="text" id="joinName" maxlength="16" placeholder="Player 2" />
+        <label for="joinCode">Game code</label>
+        <input type="text" id="joinCode" maxlength="8" placeholder="e.g. AB12C" style="text-transform:uppercase" />
+        <button class="primary-btn" id="joinBtn">Join Game</button>
+        <p class="hint" id="joinStatusMsg"></p>
+      </div>
+    </div>
+
+    <!-- In-game panel -->
+    <div class="panel" id="gamePanel" hidden>
+      <div class="player-card" id="topCard">
+        <div class="pname" id="topName">Opponent</div>
+        <div class="captured" id="topCaptured"></div>
+      </div>
+      <div id="turnStatus">White to move</div>
+      <div class="player-card" id="bottomCard">
+        <div class="pname" id="bottomName">You</div>
+        <div class="captured" id="bottomCaptured"></div>
+      </div>
+      <div class="moves" id="moveList"></div>
+      <div class="btn-row">
+        <button class="secondary-btn" id="undoBtn">↶ Undo</button>
+        <button class="secondary-btn" id="flipBtn">⇅ Flip</button>
+        <button class="secondary-btn" id="resignBtn">⚑ Resign</button>
+      </div>
+      <button class="secondary-btn" id="leaveBtn">Leave Game</button>
+    </div>
+  </div>
+
+  <!-- promotion picker -->
+  <div class="modal" id="promoModal" hidden>
+    <div class="modal-box">
+      <h3>Your soldier reached the far side! Promote to:</h3>
+      <div class="promo-options" id="promoOptions"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="engine.js"></script>
+  <script src="render.js"></script>
+  <script src="net.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
