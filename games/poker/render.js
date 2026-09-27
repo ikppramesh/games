@@ -283,7 +283,7 @@
     c.font = `600 15px ${SERIF}`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('T E X A S   H O L D ’ E M', CX, CY + 76);
+    c.fillText('I R   H O L D ’ E M', CX, CY + 76);
     c.font = `italic 11px ${SERIF}`;
     c.fillText('♠  ♥  ♦  ♣', CX, CY + 96);
     // the rail throws a soft shadow onto the felt

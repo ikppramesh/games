@@ -482,10 +482,15 @@ body.rankings-hidden .rankings{display:none;}
 }
 
 /* ---------- wide screens: big table, slim corner panels ----------
-   Hand rankings tucks into the top-left corner and the game log into the
-   top-right, so the table gets nearly all of the width. */
+   Hand rankings is a slim column on the left. The game log floats in the
+   table's top-right corner and the betting controls in its bottom-right
+   corner (over the empty room outside the rail), so the table gets almost
+   the whole page. */
 @media (min-width: 1200px) and (min-aspect-ratio: 6/5){
-  .layout{max-width:none; padding:10px 14px; gap:14px;}
+  .topbar{padding:6px 18px;}
+  .layout{max-width:none; padding:8px 14px; gap:12px; position:relative;}
+  .board-wrap{position:relative;}
+  body:has(#gamePanel:not([hidden])) .hint{display:none;}
 
   .rankings{
     flex:0 0 240px;
@@ -514,20 +519,41 @@ body.rankings-hidden .rankings{display:none;}
   .rk-num{width:14px; height:14px; font-size:0.54rem;}
   .rk-you{margin-left:0; font-size:0.5rem; padding:0 5px;}
 
+  /* floating glass panels over the table's corners */
+  #gamePanel, .action-bar{
+    background:rgba(22,17,13,0.78);
+    -webkit-backdrop-filter:blur(8px);
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(255,220,170,0.12);
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+  }
   #gamePanel{
-    flex:0 0 210px;
+    position:absolute;
+    top:8px;
+    right:14px;
+    z-index:5;
     width:210px;
-    align-self:flex-start;
-    max-height:100%;
-    padding:10px;
-    gap:7px;
+    max-height:none;
+    padding:8px 10px;
+    gap:5px;
     border-radius:12px;
   }
-  #gamePanel h2{font-size:0.82rem;}
-  #handStatus{font-size:0.72rem;}
-  #turnStatus{font-size:0.78rem; padding:7px; min-height:0;}
-  #log{font-size:0.68rem; padding:6px 8px; min-height:0; max-height:260px;}
-  #leaveBtn{padding:6px; font-size:0.75rem;}
-  .action-bar{max-width:560px; padding:8px 12px; gap:6px;}
-  .act-btn{padding:9px;}
+  #gamePanel h2{display:none;}
+  #handStatus{font-size:0.7rem;}
+  #turnStatus{font-size:0.76rem; padding:5px; min-height:0;}
+  #log{font-size:0.66rem; padding:5px 8px; min-height:0; max-height:62px; flex:0 0 auto;}
+  #leaveBtn{padding:4px; font-size:0.72rem;}
+
+  .action-bar{
+    position:absolute;
+    right:0;
+    bottom:0;
+    z-index:5;
+    width:300px;
+    max-width:none;
+    padding:8px 10px;
+    gap:6px;
+  }
+  .pot-info{font-size:0.78rem;}
+  .act-btn{padding:8px 4px; font-size:0.85rem;}
 }
