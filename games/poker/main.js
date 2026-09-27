@@ -1,7 +1,6 @@
 (function () {
   const canvas = document.getElementById('tableCanvas');
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  const ctx = PokerRender.init(canvas);
 
   const SEAT_COLORS = ['#4fd1c5', '#f6ad55', '#e05263', '#a78bfa', '#f4d35e', '#66bb6a'];
 
@@ -56,6 +55,7 @@
   let botCounter = 0;
   let gameStarted = false;
   let hostTurnTimer = null;
+  let lastFrame = 0, animating = false; // render loop bookkeeping
 
   render(); // draw the empty table immediately, before any game starts
 
@@ -392,248 +392,19 @@
     return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
-  // ---------- canvas rendering ----------
-  function seatPositions(n) {
-    const cx = W / 2, cy = H / 2 - 10, rx = 370, ry = 205;
-    const pts = [];
-    for (let k = 0; k < n; k++) {
-      const angle = Math.PI / 2 + k * (2 * Math.PI / n);
-      pts.push({ x: cx + rx * Math.cos(angle), y: cy + ry * Math.sin(angle), angle });
-    }
-    return pts;
-  }
-
-  function roundRect(c, x, y, w, h, r) {
-    c.beginPath();
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
-  }
-
-  function suitSymbol(s) { return { S: '♠', H: '♥', D: '♦', C: '♣' }[s] || '?'; }
-
-  function drawCard(x, y, w, h, card, faceDown) {
-    roundRect(ctx, x, y, w, h, 6);
-    if (faceDown || !card) {
-      ctx.fillStyle = faceDown ? '#1c3a5e' : 'rgba(255,255,255,0.06)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      if (faceDown) {
-        ctx.save();
-        roundRect(ctx, x, y, w, h, 6);
-        ctx.clip();
-        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-        for (let i = -h; i < w + h; i += 7) {
-          ctx.beginPath(); ctx.moveTo(x + i, y); ctx.lineTo(x + i + h, y + h); ctx.stroke();
-        }
-        ctx.restore();
-      }
-      return;
-    }
-    ctx.fillStyle = '#fdfdfd';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    const red = card.suit === 'H' || card.suit === 'D';
-    ctx.fillStyle = red ? '#d0263a' : '#1a1a1a';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.font = `bold ${Math.round(h * 0.3)}px sans-serif`;
-    ctx.fillText(PK.rankLabel(card.rank), x + 4, y + 2);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `${Math.round(h * 0.34)}px sans-serif`;
-    ctx.fillText(suitSymbol(card.suit), x + w / 2, y + h / 2 + h * 0.08);
-  }
-
-  function shade(hex, amt) {
-    const n = parseInt(hex.slice(1), 16);
-    let r = (n >> 16) + amt, g = ((n >> 8) & 0xff) + amt, b = (n & 0xff) + amt;
-    r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
-    return `rgb(${r},${g},${b})`;
-  }
-
-  function drawChipStack(x, y, amount, color) {
-    if (!amount) return;
-    const layers = Math.min(5, 1 + Math.floor(amount / 60));
-    for (let i = 0; i < layers; i++) {
-      ctx.beginPath();
-      ctx.ellipse(x, y - i * 3, 10, 5.5, 0, 0, Math.PI * 2);
-      ctx.fillStyle = i % 2 === 0 ? color : shade(color, -25);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(amount, x, y - layers * 3 - 8);
-  }
-
+  // ---------- canvas rendering (see render.js) ----------
+  // Redraws immediately on state changes; the loop below keeps animations
+  // (dealing, chip movement, the acting player's glow) running smoothly.
   function render() {
-    const state = currentState();
-    ctx.clearRect(0, 0, W, H);
-
-    // backdrop
-    const bg = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 620);
-    bg.addColorStop(0, '#132018');
-    bg.addColorStop(1, '#0a0f0c');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-
-    // rail
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(W / 2, H / 2 - 10, 410, 245, 0, 0, Math.PI * 2);
-    const railGrad = ctx.createLinearGradient(0, H / 2 - 255, 0, H / 2 + 225);
-    railGrad.addColorStop(0, '#6b4527');
-    railGrad.addColorStop(1, '#3a230f');
-    ctx.fillStyle = railGrad;
-    ctx.fill();
-    ctx.restore();
-
-    // felt
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(W / 2, H / 2 - 10, 370, 205, 0, 0, Math.PI * 2);
-    const felt = ctx.createRadialGradient(W / 2, H / 2 - 10, 40, W / 2, H / 2 - 10, 380);
-    felt.addColorStop(0, '#0f6b48');
-    felt.addColorStop(1, '#083f2b');
-    ctx.fillStyle = felt;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.restore();
-
-    if (!state) {
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('Waiting for players...', W / 2, H / 2);
-      return;
-    }
-
-    const n = state.players.length;
-    if (!n) return;
-    const mySeat = (state.players.find(p => p.id === myId) || {}).seat || 0;
-    const positions = seatPositions(n);
-
-    // community cards + pot (center)
-    const cardW = 44, cardH = 62, gap = 8;
-    const totalW = cardW * 5 + gap * 4;
-    const startX = W / 2 - totalW / 2;
-    for (let i = 0; i < 5; i++) {
-      const card = state.community[i];
-      drawCard(startX + i * (cardW + gap), H / 2 - 10 - cardH / 2, cardW, cardH, card, false);
-    }
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.font = 'bold 15px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`Pot: ${state.pot}`, W / 2, H / 2 - 10 - cardH / 2 - 16);
-
-    // seats
-    state.players.forEach((p) => {
-      const displayIdx = (p.seat - mySeat + n) % n;
-      const pos = positions[displayIdx];
-      const color = SEAT_COLORS[p.seat % SEAT_COLORS.length];
-      const isActing = state.actingId === p.id;
-      const isMe = p.id === myId;
-
-      ctx.save();
-      ctx.globalAlpha = p.folded || p.bustedOut ? 0.4 : 1;
-
-      // hole cards
-      const cw = isMe ? 40 : 30, ch = isMe ? 58 : 44;
-      const showFace = isMe || state.stage === 'showdown';
-      const cardsY = pos.y - ch - 34;
-      if (p.holeCards && p.holeCards.length && !p.bustedOut) {
-        drawCard(pos.x - cw - 2, cardsY, cw, ch, p.holeCards[0], !showFace);
-        drawCard(pos.x + 2, cardsY, cw, ch, p.holeCards[1], !showFace);
-      }
-
-      // avatar
-      const r = isMe ? 30 : 26;
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-      if (isActing) {
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = '#fff2a8';
-        ctx.shadowColor = '#fff2a8';
-        ctx.shadowBlur = 14;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      } else {
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-        ctx.stroke();
-      }
-      ctx.fillStyle = '#0f1720';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText((p.name || '?').slice(0, 2).toUpperCase(), pos.x, pos.y);
-
-      // name / chips label
-      ctx.globalAlpha = p.folded || p.bustedOut ? 0.55 : 1;
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText(p.name + (isMe ? ' (you)' : ''), pos.x, pos.y + r + 16);
-      ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.font = '11px sans-serif';
-      ctx.fillText(p.bustedOut ? 'out' : p.folded ? 'folded' : `${p.chips} chips`, pos.x, pos.y + r + 30);
-
-      // dealer button
-      if (p.seat === state.dealerSeat) {
-        ctx.beginPath();
-        ctx.arc(pos.x + r + 6, pos.y - r - 6, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff';
-        ctx.fill();
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = '#333';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('D', pos.x + r + 6, pos.y - r - 5);
-      }
-
-      ctx.restore();
-
-      // bet-this-round chips, well clear of the seat's name/chip labels
-      // (which sit below the avatar) - push firmly toward the pot
-      if (p.betThisRound > 0 && !p.bustedOut) {
-        const bx = pos.x + (W / 2 - pos.x) * 0.55;
-        const by = pos.y + (H / 2 - 10 - pos.y) * 0.55;
-        drawChipStack(bx, by, p.betThisRound, color);
-      }
-    });
-
-    // winner banner
-    if (state.stage === 'showdown' && state.winners.length) {
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      roundRect(ctx, W / 2 - 200, 14, 400, 30, 8);
-      ctx.fill();
-      ctx.fillStyle = '#fff2a8';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(state.winners.map(w => `${w.name} +${w.amount}`).join('  •  '), W / 2, 34);
-    }
+    lastFrame = performance.now();
+    animating = PokerRender.draw(ctx, currentState(), myId, SEAT_COLORS, lastFrame);
   }
 
-  // periodic light refresh for the "thinking" indicator / anything time-based
-  setInterval(() => { if (gameStarted) { render(); } }, 900);
+  function loop(now) {
+    if (animating || now - lastFrame > 500) render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
 
   window.__PK_DEBUG = { getState: currentState, getTable: () => TABLE, getMode: () => mode, getMyId: () => myId };
 })();
