@@ -100,7 +100,10 @@
     <div class="panel" id="gamePanel" hidden>
       <h2>IR Hold'em</h2>
       <div id="handStatus">Hand #0</div>
-      <div id="turnStatus">Waiting...</div>
+      <div class="status-row">
+        <div id="turnStatus">Waiting...</div>
+        <button class="log-toggle" id="logToggle" type="button" aria-expanded="false">Log ▾</button>
+      </div>
       <div id="log"></div>
       <button class="secondary-btn" id="leaveBtn">Leave Table</button>
       <div class="fun-note small">Play money only &mdash; for fun, not real money.</div>

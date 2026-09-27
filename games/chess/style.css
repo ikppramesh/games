@@ -205,3 +205,22 @@ input[type="text"]:focus{outline:none; border-color:var(--accent);}
   .moves{min-height:60px; max-height:110px;}
   .view-tools .tip{display:none;}
 }
+
+/* ---------- phones in landscape: board left at full height, panel right ---------- */
+@media (orientation: landscape) and (max-height: 600px){
+  .topbar{padding:4px 10px;}
+  .topbar h1{font-size:0.95rem;}
+  .icon-btn{width:30px; height:28px; font-size:0.85rem;}
+  .layout{flex-direction:row; padding:6px; gap:8px;}
+  .board-wrap{flex:1 1 auto; height:auto;}
+  .panel{flex:0 0 min(300px, 40vw); width:min(300px, 40vw); align-self:stretch; max-height:100%; padding:8px 10px; gap:6px; border-radius:12px;}
+  .panel-head h2{font-size:1rem;} .cast{display:none;}
+  .modes{gap:5px;} .mode{padding:6px 8px;} .mode small{display:none;} .mode .mi{font-size:1rem;}
+  .player{padding:5px 8px; gap:8px;} .avatar{flex-basis:34px; width:34px; height:34px;}
+  .captured{min-height:18px;}
+  .status{padding:5px; font-size:0.8rem;}
+  .moves{min-height:40px; max-height:none; flex:1 1 0;}
+  .actions button{padding:4px 2px; font-size:0.66rem;} .actions button span{font-size:0.9rem;}
+  .secondary-btn{padding:6px; margin-top:4px;}
+  .view-tools .tip{display:none;}
+}

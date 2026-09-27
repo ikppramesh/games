@@ -365,3 +365,36 @@ button{
   font-size:0.85rem;
 }
 .diff-btn.active{border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset;}
+
+.log-toggle{display:none;}
+/* ---------- phones, portrait: the tall table gets the height, panel shrinks ---------- */
+@media (max-width: 780px) and (orientation: portrait), (max-aspect-ratio: 4/5) and (orientation: portrait){
+  body.in-game .board-wrap{max-height:none; flex:1 1 auto;}
+  body.in-game .hint{display:none;}
+  body.in-game .panel{flex:0 0 auto; gap:6px;}
+  body.in-game #gamePanel h2, body.in-game .zone-legend{display:none;}
+  body.in-game .meta-row{font-size:0.72rem;}
+  body.in-game .aim-controls{position:static;}
+  body.in-game .aim-controls button{width:34px; height:30px;}
+  body.in-game .scoreboard .score-card{padding:5px 8px;}
+  body.in-game .score-card .score{font-size:1.15rem;}
+  body:not(.in-game) .board-wrap{max-height:38%;}
+}
+/* game log collapses on phones and short screens */
+@media (max-width: 780px), (max-height: 600px){
+  .log-toggle{display:block; width:100%; padding:6px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2); color:var(--accent); font-size:0.78rem; font-weight:600;}
+  #log{display:none; height:auto; max-height:20dvh;}
+  body.log-open #log{display:flex;}
+}
+/* ---------- phones, landscape: table full height, compact panel ---------- */
+@media (orientation: landscape) and (max-height: 600px){
+  .topbar{padding:4px 12px;}
+  .topbar h1{font-size:0.95rem;}
+  .layout{flex-direction:row; padding:6px 10px; gap:10px;}
+  .board-wrap{max-height:none;}
+  .hint{display:none;}
+  .panel{flex:0 0 min(290px, 42vw); width:min(290px, 42vw); max-height:100%; align-self:stretch; padding:8px 10px; gap:6px;}
+  #gamePanel h2, .zone-legend{display:none;}
+  .score-card{padding:5px;} .score-card .score{font-size:1.15rem;}
+  #turnStatus{padding:6px; font-size:0.8rem;}
+}

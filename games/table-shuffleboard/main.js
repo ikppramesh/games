@@ -267,7 +267,15 @@
     return SB.state.currentShooter === myPlayerId();
   }
 
+  // small screens: the game log folds away behind a button
+  const logToggle = document.getElementById('logToggle');
+  logToggle.addEventListener('click', () => {
+    const open = document.body.classList.toggle('log-open');
+    logToggle.textContent = open ? 'Game log ▴' : 'Game log ▾';
+  });
+
   function startGameUI() {
+    document.body.classList.add('in-game');
     els.setupPanel.hidden = true;
     els.gamePanel.hidden = false;
 

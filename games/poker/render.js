@@ -7,7 +7,11 @@
   // The table is laid out in "design units" (BASE_W x H) and scaled to fill
   // the canvas. On screens wider than the design, W grows and the oval
   // stretches sideways (up to MAX_STRETCH) so the table uses the full width.
-  const BASE_W = 900, H = 596, CY = H / 2 - 10, MAX_STRETCH = 1.35;
+  // On tall (portrait) screens the table turns upright: a vertical oval
+  // that fills a phone instead of a thin wide strip. Same seats and flow.
+  const BASE_W = 900, BASE_H = 596, MAX_STRETCH = 1.35;
+  const PORTRAIT_W = 620, PORTRAIT_MIN_H = 920, PORTRAIT_MAX_H = 1150;
+  let H = BASE_H, CY = H / 2 - 10, portrait = false;
   const BASE_RX = { rail: 428, trim: 381, felt: 368, seat: 370 };
   const RAIL = { rx: BASE_RX.rail, ry: 262 };
   const TRIM = { rx: BASE_RX.trim, ry: 216 };
@@ -46,7 +50,7 @@
 
   let DPR = 1;          // device pixels per CSS pixel
   let RES = 1;          // device pixels per design unit (DPR * view scale)
-  let VIEW = { s: 1, ox: 0, oy: 0, cw: BASE_W, ch: H };
+  let VIEW = { s: 1, ox: 0, oy: 0, cw: BASE_W, ch: BASE_H };
   let canvasEl = null;
   let bgLayer = null;
   const sprites = new Map();
@@ -66,13 +70,29 @@
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     if (bgLayer && Math.abs(cw - VIEW.cw) < 0.5 && Math.abs(ch - VIEW.ch) < 0.5 && dpr === DPR) return false;
     DPR = dpr;
-    W = BASE_W * Math.max(1, Math.min(MAX_STRETCH, (cw / ch) / (BASE_W / H)));
-    CX = W / 2;
-    const extra = (W - BASE_W) / 2;
-    RAIL.rx = BASE_RX.rail + extra;
-    TRIM.rx = BASE_RX.trim + extra;
-    FELT.rx = BASE_RX.felt + extra;
-    SEAT.rx = BASE_RX.seat + extra;
+    portrait = cw / ch < 0.9;
+    if (portrait) {
+      W = PORTRAIT_W;
+      H = Math.max(PORTRAIT_MIN_H, Math.min(PORTRAIT_MAX_H, W * ch / cw));
+      CX = W / 2;
+      CY = H / 2 + 8;
+      const extra = (H - PORTRAIT_MIN_H) / 2;
+      // the same oval, turned on its end
+      RAIL.rx = 262; RAIL.ry = BASE_RX.rail + extra;
+      TRIM.rx = 216; TRIM.ry = BASE_RX.trim + extra;
+      FELT.rx = 203; FELT.ry = BASE_RX.felt + extra;
+      SEAT.rx = 205; SEAT.ry = BASE_RX.seat + extra;
+    } else {
+      H = BASE_H;
+      CY = H / 2 - 10;
+      W = BASE_W * Math.max(1, Math.min(MAX_STRETCH, (cw / ch) / (BASE_W / H)));
+      CX = W / 2;
+      const extra = (W - BASE_W) / 2;
+      RAIL.rx = BASE_RX.rail + extra; RAIL.ry = 262;
+      TRIM.rx = BASE_RX.trim + extra; TRIM.ry = 216;
+      FELT.rx = BASE_RX.felt + extra; FELT.ry = 203;
+      SEAT.rx = BASE_RX.seat + extra; SEAT.ry = 205;
+    }
     DECK = { x: CX, y: CY - 130 };
     POT_SPOT = { x: CX - 36, y: CY - 44 };
     const s = Math.min(cw / W, ch / H);
@@ -401,7 +421,8 @@
     c.lineWidth = 1;
     if (T.table.deco) {
       for (const side of [-1, 1]) {
-        const x = CX + side * (FELT.rx - 120), y = CY + 30;
+        // fans sit either side of the cards: left/right on a wide table, above/below on an upright one
+        const x = portrait ? CX : CX + side * (FELT.rx - 120), y = portrait ? CY + side * (FELT.ry - 150) : CY + 30;
         for (let i = 0; i < 7; i++) {
           const a = -Math.PI / 2 + (i - 3) * 0.28;
           c.beginPath();

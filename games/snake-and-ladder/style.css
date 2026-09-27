@@ -304,24 +304,37 @@ button{
 .dice[data-face="6"] .tl,.dice[data-face="6"] .tr,.dice[data-face="6"] .ml,.dice[data-face="6"] .mr,.dice[data-face="6"] .bl,.dice[data-face="6"] .br{opacity:1;}
 .roll-btn{ flex:1; margin-top:0; }
 
-@media (max-width: 900px), (max-aspect-ratio: 6/5){
-  .layout{
-    flex-direction:column;
-    padding:8px 12px;
-    gap:8px;
-  }
-  .board-wrap{
-    flex:1 1 auto;
-    max-height:62%;
-  }
-  .panel{
-    flex:1 1 0;
-    width:100%;
-    padding:12px;
-    gap:8px;
-  }
-  .hint{ font-size:0.7rem; }
-  #log{ min-height:40px; }
+.log-toggle{display:none;}
+
+/* ---------- phones & tablets, portrait: board on top, as big as the width allows ---------- */
+@media (max-width: 900px) and (orientation: portrait), (max-aspect-ratio: 6/5) and (orientation: portrait){
+  .layout{flex-direction:column; padding:6px 8px; gap:6px;}
+  .board-wrap{flex:0 1 auto; min-height:0; gap:6px;}
+  .canvas-frame{flex:0 1 auto; max-height:calc(100dvh - 230px);}
+  body:not(.in-game) .canvas-frame{max-height:36dvh;}
+  .panel{flex:1 1 auto; min-height:0; width:100%; padding:10px 12px; gap:8px; align-self:stretch;}
+  .hint{font-size:0.68rem;}
+  body.in-game .hint{display:none;}
+  #gamePanel h2{display:none;}
+}
+/* ---------- phones, landscape: board fills the height, panel on the right ---------- */
+@media (orientation: landscape) and (max-height: 600px){
+  .topbar{padding:4px 12px;}
+  .topbar h1{font-size:0.95rem;}
+  .layout{flex-direction:row; padding:6px 8px; gap:10px;}
+  .board-wrap{flex:1 1 auto; flex-direction:row; gap:10px; align-items:center;}
+  .canvas-frame{flex:1 1 auto; height:100%;}
+  .dice-bar{flex-direction:column; width:110px;}
+  .roll-btn{padding:8px 4px; font-size:0.78rem;}
+  .hint{display:none;}
+  .panel{flex:0 0 min(290px, 38vw); width:min(290px, 38vw); max-height:100%; align-self:stretch; padding:8px 10px; gap:6px;}
+  #gamePanel h2{display:none;}
+}
+/* game log collapses on phones (both orientations) */
+@media (max-width: 900px), (max-height: 600px){
+  .log-toggle{display:block; width:100%; padding:6px; border-radius:8px; border:1px solid var(--border, #2a2e3a); background:var(--panel-2); color:var(--accent); font-size:0.78rem; font-weight:600;}
+  #log{display:none; min-height:0; max-height:22dvh;}
+  body.log-open #log{display:flex;}
 }
 
 /* ---------- board theme picker ---------- */

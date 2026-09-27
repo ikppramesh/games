@@ -327,27 +327,76 @@ button{
   font-size:0.78rem;
 }
 
-@media (max-width: 900px), (max-aspect-ratio: 6/5){
-  .layout{
-    flex-direction:column;
-    padding:8px 12px;
-    gap:8px;
+/* the log toggle only exists on small screens */
+.status-row{display:flex; gap:6px; align-items:stretch;}
+.status-row #turnStatus{flex:1;}
+.log-toggle{display:none;}
+
+/* ---------- phones & tablets, portrait ----------
+   The table (drawn upright by render.js) gets all the height it can;
+   the side panel shrinks to a status strip with a collapsible log. */
+@media (max-width: 900px) and (orientation: portrait), (max-aspect-ratio: 6/5) and (orientation: portrait){
+  .layout{flex-direction:column; padding:6px 8px; gap:6px;}
+  .board-wrap{flex:1 1 auto; min-height:0; gap:6px;}
+  .canvas-frame{flex:1 1 auto; min-height:0;}
+  .hint{font-size:0.68rem;}
+  body.in-game .hint{display:none;}
+  .panel{flex:0 0 auto; width:100%; max-height:46dvh; padding:10px 12px; gap:8px; align-self:stretch;}
+  /* before a game: the setup panel needs the room, so the table stays smaller */
+  body:not(.in-game) .board-wrap{flex:0 0 34dvh;}
+  body:not(.in-game) .panel{flex:1 1 auto; max-height:none; min-height:0;}
+  #gamePanel{gap:6px;}
+  #gamePanel h2, #handStatus, #gamePanel .fun-note{display:none;}
+  #turnStatus{padding:8px; font-size:0.85rem; min-height:0;}
+  .log-toggle{
+    display:block; flex:0 0 auto; padding:0 12px; border-radius:8px;
+    border:1px solid var(--border); background:var(--panel-2); color:var(--accent); font-size:0.8rem; font-weight:600;
   }
-  .board-wrap{
-    flex:0 0 auto;
+  #log{display:none; max-height:24dvh; min-height:0;}
+  body.log-open #log{display:flex;}
+  #leaveBtn{padding:7px; font-size:0.8rem;}
+  .action-bar{padding:8px 10px; gap:6px;}
+  .act-btn{padding:10px 4px; font-size:0.9rem;}
+}
+
+/* ---------- phones & tablets, landscape ----------
+   Table uses the full height on the left; a slim column on the right holds
+   turn status, the collapsible log and the betting buttons (so they never
+   cover a seat - the table is height-limited, so the column costs nothing). */
+@media (orientation: landscape) and (max-height: 600px), (orientation: landscape) and (max-width: 1199px) and (min-aspect-ratio: 6/5){
+  :root{--side-col:250px;}
+  .topbar{padding:4px 12px;}
+  .layout{flex-direction:row; padding:4px 8px 6px; gap:8px; position:relative;}
+  .board-wrap{flex:1 1 auto; position:relative; gap:0;}
+  body.in-game .board-wrap{padding-right:var(--side-col);}
+  .canvas-frame{flex:1 1 auto; min-height:0;}
+  .hint{display:none;}
+  body:not(.in-game) .panel{flex:0 0 300px; width:300px; max-height:100%; align-self:stretch; padding:10px 12px; gap:8px;}
+  #gamePanel{
+    position:absolute; top:4px; right:8px; z-index:5; width:calc(var(--side-col) - 8px);
+    max-height:calc(100% - 140px); padding:8px; gap:6px; border-radius:10px; overflow:auto;
   }
-  .canvas-frame{
-    flex:0 0 auto;
-    height:min(calc((100vw - 24px) * 0.68), 52dvh);
-  }
-  .panel{
-    flex:1 1 0;
-    width:100%;
-    padding:12px;
-    gap:8px;
-  }
-  .hint{ font-size:0.7rem; }
-  #log{ min-height:40px; }
+  #gamePanel h2, #gamePanel .fun-note{display:none;}
+  #handStatus{font-size:0.72rem;}
+  #turnStatus{padding:6px; font-size:0.8rem; min-height:0;}
+  .log-toggle{display:block; flex:0 0 auto; padding:0 9px; border-radius:7px; border:1px solid var(--border); background:var(--panel-2); color:var(--accent); font-size:0.74rem; font-weight:600;}
+  #log{display:none; max-height:none; flex:1 1 auto; font-size:0.68rem; padding:5px 7px; min-height:0;}
+  body.log-open #log{display:flex;}
+  #leaveBtn{padding:5px; font-size:0.74rem; margin:0;}
+  .action-bar{position:absolute; right:0; bottom:0; z-index:5; width:calc(var(--side-col) - 8px); max-width:none; padding:8px; gap:6px; border-radius:10px;}
+  .action-buttons{flex-wrap:wrap;}
+  .pot-info{font-size:0.76rem;}
+  .act-btn{padding:9px 4px; font-size:0.86rem;}
+}
+@media (orientation: landscape) and (max-height: 600px){
+  :root{--side-col:200px;}
+  .topbar h1{font-size:0.95rem;}
+  .topbar .back{font-size:0.8rem;}
+  .rk-toggle{padding:4px 9px; font-size:0.72rem;}
+  #handStatus{display:none;}
+  #gamePanel{max-height:calc(100% - 110px); padding:6px; gap:4px;}
+  .act-btn{padding:7px 2px; font-size:0.78rem;}
+  .action-bar{padding:6px; gap:4px;}
 }
 
 /* ---------- hand rankings cheat sheet ---------- */

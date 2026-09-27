@@ -318,8 +318,17 @@
   });
 
   // ---------- shared game flow ----------
+  // phones: the game log folds away behind a button
+  const logToggle = document.getElementById('logToggle');
+  logToggle.addEventListener('click', () => {
+    const open = document.body.classList.toggle('log-open');
+    logToggle.setAttribute('aria-expanded', open);
+    logToggle.textContent = open ? 'Log ▴' : 'Log ▾';
+  });
+
   function startGameUI() {
     gameStarted = true;
+    document.body.classList.add('in-game');
     els.setupPanel.hidden = true;
     els.gamePanel.hidden = false;
     els.actionBar.hidden = false;

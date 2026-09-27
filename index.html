@@ -118,6 +118,20 @@
     color:var(--muted);
     border:1px solid rgba(142,160,179,0.3);
   }
+  /* phones, small tablets and short landscape screens: let the page scroll
+     and give the cards their natural size instead of squeezing them */
+  @media (max-width: 700px), (max-height: 620px){
+    body{height:auto; min-height:100dvh; overflow:auto; justify-content:flex-start;}
+    .grid{grid-template-columns:repeat(auto-fill, minmax(min(100%, 240px), 1fr));}
+    .card{min-height:auto;}
+  }
+  @media (max-width: 460px){
+    .grid{grid-template-columns:1fr 1fr; gap:10px;}
+    .card{padding:14px 12px;}
+    .card p{display:none;}
+    .card h2{font-size:0.98rem;}
+    .badge{top:10px; right:10px; font-size:0.6rem; padding:3px 7px;}
+  }
   footer{
     flex:0 0 auto;
     color:var(--muted);
