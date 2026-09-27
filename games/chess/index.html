@@ -4,59 +4,79 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 <title>Chess: Royal Armies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
 </head>
 <body>
-  <div class="topbar">
+  <header class="topbar">
     <a class="back" href="../../index.html">&larr; Game Room</a>
-    <h1>♞ Chess: Royal Armies</h1>
-    <button class="icon-btn" id="soundBtn" type="button" title="Sound on/off">🔊</button>
-  </div>
+    <h1><span class="crest">♞</span> Chess <span class="thin">Royal Armies</span></h1>
+    <div class="top-actions">
+      <button class="icon-btn" id="soundBtn" type="button" title="Sound on/off">🔊</button>
+      <button class="icon-btn" id="settingsBtn" type="button" title="Board &amp; pieces">⚙</button>
+    </div>
+  </header>
 
-  <div class="layout">
-    <div class="board-wrap">
+  <main class="layout">
+    <section class="board-wrap">
       <div class="canvas-frame">
         <canvas id="boardCanvas"></canvas>
+        <div class="loading" id="loading"><div class="spinner"></div>Setting up the board&hellip;</div>
         <div class="banner" id="banner" hidden></div>
+        <div class="view-tools" id="viewTools" hidden>
+          <button type="button" id="rotLeftBtn" title="Rotate left">⟲</button>
+          <button type="button" id="resetViewBtn" title="Reset view">⌂</button>
+          <button type="button" id="rotRightBtn" title="Rotate right">⟳</button>
+          <span class="tip">Right-drag or two fingers to turn &amp; zoom</span>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Setup panel -->
-    <div class="panel" id="setupPanel">
-      <h2>Play Chess</h2>
-      <p class="cast">Every piece is a character: <b>Soldier</b> (pawn), <b>Horse</b> (knight), <b>Camel</b> (bishop), <b>Elephant</b> (rook), <b>Queen</b> and <b>King</b>.</p>
-      <div class="setup-tabs">
-        <button class="tab-btn active" data-tab="cpu">Vs Computer</button>
-        <button class="tab-btn" data-tab="host">Create Game</button>
-        <button class="tab-btn" data-tab="join">Join Game</button>
+    <!-- Setup -->
+    <aside class="panel" id="setupPanel">
+      <div class="panel-head">
+        <h2>New game</h2>
+        <p class="cast">Soldiers, horses, camels, elephants, a queen and a king &mdash; every piece fights for real.</p>
+      </div>
+      <div class="modes" id="modes">
+        <button type="button" class="mode active" data-mode="cpu"><span class="mi">🤖</span><b>Vs Computer</b><small>Easy to hard</small></button>
+        <button type="button" class="mode" data-mode="host"><span class="mi">🌐</span><b>Play Online</b><small>Invite a friend</small></button>
+        <button type="button" class="mode" data-mode="join"><span class="mi">🔗</span><b>Join Game</b><small>Have a code?</small></button>
+        <button type="button" class="mode" data-mode="pass"><span class="mi">👥</span><b>Pass &amp; Play</b><small>One device</small></button>
       </div>
 
-      <div id="cpuPanel" class="setup-panel">
+      <div class="opts" id="cpuOpts">
         <label>Difficulty</label>
-        <div class="choice" id="levelChoice">
-          <button type="button" class="choice-btn" data-v="easy">Easy</button>
-          <button type="button" class="choice-btn active" data-v="medium">Medium</button>
-          <button type="button" class="choice-btn" data-v="hard">Hard</button>
+        <div class="seg" id="levelChoice">
+          <button type="button" data-v="easy">Easy</button>
+          <button type="button" data-v="medium" class="active">Medium</button>
+          <button type="button" data-v="hard">Hard</button>
         </div>
         <label>Play as</label>
-        <div class="choice" id="sideChoice">
-          <button type="button" class="choice-btn active" data-v="w">Ivory (white)</button>
-          <button type="button" class="choice-btn" data-v="b">Ebony (black)</button>
-          <button type="button" class="choice-btn" data-v="r">Random</button>
+        <div class="seg" id="sideChoice">
+          <button type="button" data-v="w" class="active">⚪ Ivory</button>
+          <button type="button" data-v="b">⚫ Ebony</button>
+          <button type="button" data-v="r">🎲 Random</button>
         </div>
-        <button class="primary-btn" id="cpuBtn">Play vs Computer</button>
-        <button class="secondary-btn" id="passBtn">Pass &amp; Play (2 players, 1 device)</button>
+        <button class="primary-btn" id="cpuBtn">Start game</button>
       </div>
 
-      <div id="hostPanel" class="setup-panel" hidden>
+      <div class="opts" id="hostOpts" hidden>
         <label for="hostName">Your name</label>
         <input type="text" id="hostName" maxlength="16" placeholder="Player 1" />
         <label>You play</label>
-        <div class="choice" id="hostSideChoice">
-          <button type="button" class="choice-btn active" data-v="w">Ivory (white)</button>
-          <button type="button" class="choice-btn" data-v="b">Ebony (black)</button>
+        <div class="seg" id="hostSideChoice">
+          <button type="button" data-v="w" class="active">⚪ Ivory</button>
+          <button type="button" data-v="b">⚫ Ebony</button>
         </div>
-        <button class="primary-btn" id="createBtn">Create Game</button>
+        <button class="primary-btn" id="createBtn">Create game</button>
         <div class="room-code-box" id="roomCodeBox" hidden>
           <div class="sub">Share this code or link with your opponent</div>
           <div class="code" id="roomCodeText">-----</div>
@@ -68,42 +88,97 @@
         <p class="hint" id="hostStatusMsg"></p>
       </div>
 
-      <div id="joinPanel" class="setup-panel" hidden>
+      <div class="opts" id="joinOpts" hidden>
         <label for="joinName">Your name</label>
         <input type="text" id="joinName" maxlength="16" placeholder="Player 2" />
         <label for="joinCode">Game code</label>
         <input type="text" id="joinCode" maxlength="8" placeholder="e.g. AB12C" style="text-transform:uppercase" />
-        <button class="primary-btn" id="joinBtn">Join Game</button>
+        <button class="primary-btn" id="joinBtn">Join game</button>
         <p class="hint" id="joinStatusMsg"></p>
       </div>
-    </div>
 
-    <!-- In-game panel -->
-    <div class="panel" id="gamePanel" hidden>
-      <div class="player-card" id="topCard">
-        <div class="pname" id="topName">Opponent</div>
-        <div class="captured" id="topCaptured"></div>
+      <div class="opts" id="passOpts" hidden>
+        <p class="hint">Two players take turns on this device. The board stays put &mdash; use Flip if you like to face your pieces.</p>
+        <button class="primary-btn" id="passBtn">Start game</button>
       </div>
-      <div id="turnStatus">White to move</div>
-      <div class="player-card" id="bottomCard">
-        <div class="pname" id="bottomName">You</div>
-        <div class="captured" id="bottomCaptured"></div>
+    </aside>
+
+    <!-- In game -->
+    <aside class="panel" id="gamePanel" hidden>
+      <div class="player" id="topCard">
+        <div class="avatar" id="topAvatar"></div>
+        <div class="pinfo">
+          <div class="pname" id="topName">Opponent</div>
+          <div class="captured" id="topCaptured"></div>
+        </div>
+        <div class="thinking" id="topThinking" hidden><i></i><i></i><i></i></div>
       </div>
+
+      <div class="status" id="turnStatus">White to move</div>
       <div class="moves" id="moveList"></div>
-      <div class="btn-row">
-        <button class="secondary-btn" id="undoBtn">↶ Undo</button>
-        <button class="secondary-btn" id="flipBtn">⇅ Flip</button>
-        <button class="secondary-btn" id="resignBtn">⚑ Resign</button>
+
+      <div class="player" id="bottomCard">
+        <div class="avatar" id="bottomAvatar"></div>
+        <div class="pinfo">
+          <div class="pname" id="bottomName">You</div>
+          <div class="captured" id="bottomCaptured"></div>
+        </div>
+        <div class="thinking" id="bottomThinking" hidden><i></i><i></i><i></i></div>
       </div>
-      <button class="secondary-btn" id="leaveBtn">Leave Game</button>
-    </div>
-  </div>
+
+      <div class="actions">
+        <button type="button" id="undoBtn"><span>↶</span>Undo</button>
+        <button type="button" id="hintBtn"><span>💡</span>Hint</button>
+        <button type="button" id="flipBtn"><span>⇅</span>Flip</button>
+        <button type="button" id="resignBtn"><span>⚑</span>Resign</button>
+      </div>
+      <button class="secondary-btn" id="leaveBtn">Leave game</button>
+    </aside>
+  </main>
 
   <!-- promotion picker -->
   <div class="modal" id="promoModal" hidden>
     <div class="modal-box">
-      <h3>Your soldier reached the far side! Promote to:</h3>
+      <h3>Your soldier reached the far side!</h3>
+      <p class="hint">Promote to:</p>
       <div class="promo-options" id="promoOptions"></div>
+    </div>
+  </div>
+
+  <!-- game over -->
+  <div class="modal" id="overModal" hidden>
+    <div class="modal-box over">
+      <div class="trophy" id="overIcon">🏆</div>
+      <h3 id="overTitle">You win!</h3>
+      <p id="overSub">Checkmate</p>
+      <div class="modal-actions">
+        <button class="primary-btn" id="rematchBtn">Play again</button>
+        <button class="secondary-btn" id="menuBtn">New game</button>
+        <button class="secondary-btn" id="reviewBtn">View board</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- settings -->
+  <div class="modal" id="settingsModal" hidden>
+    <div class="modal-box settings">
+      <h3>Board &amp; pieces</h3>
+      <label>Pieces</label>
+      <div class="seg" id="pieceStyleChoice">
+        <button type="button" data-v="armies" class="active">⚔ Royal Armies</button>
+        <button type="button" data-v="classic">♛ Classic</button>
+      </div>
+      <label>Board</label>
+      <div class="seg" id="boardStyleChoice">
+        <button type="button" data-v="wood" class="active">Walnut &amp; Maple</button>
+        <button type="button" data-v="marble">Marble</button>
+      </div>
+      <label>Show possible moves</label>
+      <div class="seg" id="hintsChoice">
+        <button type="button" data-v="on" class="active">On</button>
+        <button type="button" data-v="off">Off</button>
+      </div>
+      <button class="primary-btn" id="settingsDone">Done</button>
     </div>
   </div>
 
@@ -111,6 +186,7 @@
   <script src="engine.js"></script>
   <script src="render.js"></script>
   <script src="net.js"></script>
-  <script src="main.js"></script>
+  <script type="module" src="render3d.js"></script>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
