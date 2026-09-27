@@ -39,11 +39,13 @@
   // the room being drawn (rooms.js): table, cards and chip scale all follow it
   let T = global.PokerRooms.get('general');
   let chipMult = 1; // chip values are the General set scaled to the room's stakes
+  let chipSet = null; // or the room's own printed casino chips & plaques (rooms.js)
   function setRoom(id) {
     const next = global.PokerRooms.get(id);
     if (next === T) return;
     T = next;
     chipMult = T.start / 1000;
+    chipSet = T.chips || null;
     bgLayer = null;
     sprites.clear();
   }
@@ -830,7 +832,142 @@
     return cached(`chip-${di}-${variant}`, 2 * r + 2, 2 * ry + t + 2, (c) => paintChip(c, DENOMS[di], variant));
   }
 
+  // ---------- printed casino chips & rectangular plaques (Royale, Elite) ----------
+  const CC = { r: 16, ry: 9, t: 3.4 };            // round chip
+  const PQ = { w: 46, d: 16, t: 3.6 };           // plaque: width, depth on the felt, thickness
+
+  function paintCasinoChip(c, d, variant) {
+    const { r, ry, t } = CC;
+    const x = r + 1, y = ry + 1;
+    const off = variant * 0.3 + Math.PI / 8;
+    // edge band with white inserts
+    c.save();
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.ellipse(x, y + t, r, ry, 0, 0, Math.PI);
+    c.lineTo(x - r, y);
+    c.ellipse(x, y, r, ry, 0, Math.PI, 0, true);
+    c.closePath();
+    c.fillStyle = shade(d.base, -35);
+    c.fill();
+    c.clip();
+    c.fillStyle = d.spot;
+    for (let k = 0; k < 8; k++) {
+      const a = off + k * Math.PI / 4, sn = Math.sin(a);
+      if (sn <= 0.1) continue;
+      const sw = r * 0.26 * sn;
+      c.fillRect(x + r * Math.cos(a) - sw / 2, y + ry * sn, sw, t);
+    }
+    c.restore();
+    // top face
+    c.beginPath();
+    c.ellipse(x, y, r, ry, 0, 0, Math.PI * 2);
+    const g = c.createRadialGradient(x - r * 0.3, y - ry * 0.5, 1, x, y, r * 1.1);
+    g.addColorStop(0, shade(d.base, 40));
+    g.addColorStop(1, d.base);
+    c.fillStyle = g;
+    c.fill();
+    // rim inserts (little white blocks round the edge, like real clay chips)
+    c.fillStyle = d.spot;
+    for (let k = 0; k < 8; k++) {
+      const a = off + k * Math.PI / 4;
+      c.beginPath();
+      c.ellipse(x, y, r, ry, 0, a - 0.13, a + 0.13);
+      c.ellipse(x, y, r * 0.8, ry * 0.8, 0, a + 0.13, a - 0.13, true);
+      c.closePath();
+      c.fill();
+    }
+    // white centre inlay with the printed value
+    c.beginPath();
+    c.ellipse(x, y, r * 0.64, ry * 0.64, 0, 0, Math.PI * 2);
+    c.fillStyle = '#fbfaf6';
+    c.fill();
+    c.setLineDash([0.9, 0.9]);
+    c.strokeStyle = d.base;
+    c.lineWidth = 0.5;
+    c.beginPath(); c.ellipse(x, y, r * 0.56, ry * 0.56, 0, 0, Math.PI * 2); c.stroke();
+    c.setLineDash([]);
+    c.save();
+    c.translate(x, y);
+    c.scale(1, ry / r);
+    c.fillStyle = d.base === '#18181b' ? '#c8202e' : d.base;
+    c.font = `900 ${d.label.length > 4 ? 5.8 : 7}px ${SANS}`;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    fitText(c, d.label, 0, 0.4, r * 1.05);
+    c.restore();
+    c.beginPath();
+    c.ellipse(x, y, r, ry, 0, 0, Math.PI * 2);
+    c.strokeStyle = 'rgba(0,0,0,0.35)';
+    c.lineWidth = 0.6;
+    c.stroke();
+  }
+
+  function paintPlaque(c, d, variant) {
+    const { w, d: dep, t } = PQ;
+    const x = 1, y = 1, rr = 2;
+    // side thickness
+    roundRect(c, x, y + t, w, dep, rr);
+    c.fillStyle = shade(d.base, -45);
+    c.fill();
+    // top face
+    roundRect(c, x, y, w, dep, rr);
+    const g = c.createLinearGradient(x, y, x + w, y + dep);
+    g.addColorStop(0, shade(d.base, 35));
+    g.addColorStop(1, d.base);
+    c.fillStyle = g;
+    c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.35)';
+    c.lineWidth = 0.5;
+    c.stroke();
+    // white notches along the edges
+    c.fillStyle = d.spot;
+    for (let k = 1; k < 6; k++) {
+      const nx = x + (w * k) / 6;
+      c.fillRect(nx - 0.8, y, 1.6, 1.1);
+      c.fillRect(nx - 0.8, y + dep - 1.1, 1.6, 1.1);
+    }
+    for (const sx of [x, x + w - 1.3]) c.fillRect(sx, y + dep / 2 - 1, 1.3, 2);
+    // white printed panel with the value
+    const px = x + w * 0.16, py = y + dep * 0.2, pw = w * 0.68, ph = dep * 0.6;
+    roundRect(c, px, py, pw, ph, 0.8);
+    c.fillStyle = '#fbfaf6';
+    c.fill();
+    c.fillStyle = d.base === '#18181b' ? '#c8202e' : shade(d.base, -30);
+    c.font = `900 ${Math.min(8.4, 52 / d.label.length)}px ${SANS}`;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    fitText(c, d.label, px + pw / 2, py + ph / 2 + 0.3, pw - 1.5);
+    // tiny crowns in the corners
+    c.fillStyle = d.spot;
+    for (const [cx, cy] of [[x + w * 0.08, y + dep * 0.28], [x + w * 0.92, y + dep * 0.72]]) {
+      c.beginPath();
+      c.moveTo(cx - 1.2, cy + 0.8); c.lineTo(cx - 1.2, cy - 0.6); c.lineTo(cx - 0.5, cy); c.lineTo(cx, cy - 1);
+      c.lineTo(cx + 0.5, cy); c.lineTo(cx + 1.2, cy - 0.6); c.lineTo(cx + 1.2, cy + 0.8); c.closePath();
+      c.fill();
+    }
+  }
+
+  function casinoSprite(i, variant) {
+    const d = chipSet[i];
+    if (d.kind === 'plaque') return cached(`plq-${T.id}-${i}`, PQ.w + 2, PQ.d + PQ.t + 2, (c) => paintPlaque(c, d, variant));
+    return cached(`cc-${T.id}-${i}-${variant}`, 2 * CC.r + 2, 2 * CC.ry + CC.t + 2, (c) => paintCasinoChip(c, d, variant));
+  }
+
   function breakdown(amount) {
+    if (chipSet) {
+      const stacks = [];
+      let left = Math.max(0, Math.floor(amount));
+      for (let i = 0; i < chipSet.length && stacks.length < 4; i++) {
+        const n = Math.floor(left / chipSet[i].v);
+        if (!n) continue;
+        left -= n * chipSet[i].v;
+        stacks.push([i, Math.min(chipSet[i].kind === 'plaque' ? 5 : CHIP.maxPerStack, n)]);
+      }
+      // anything smaller than the smallest chip still shows as one chip
+      if (!stacks.length && amount > 0) stacks.push([chipSet.length - 1, 1]);
+      return stacks;
+    }
     const stacks = [];
     let left = Math.max(0, Math.floor(amount));
     for (let i = 0; i < DENOMS.length && stacks.length < 4; i++) {
@@ -848,10 +985,11 @@
     if (!amount) return;
     const o = opts || {};
     const stacks = breakdown(amount);
+    if (chipSet) drawCasinoStacks(ctx, x, y, stacks);
     const { r, ry, t } = CHIP;
     const span = r * 2.15;
     const x0 = x - (stacks.length - 1) * span / 2;
-    stacks.forEach(([di, count], si) => {
+    if (!chipSet) stacks.forEach(([di, count], si) => {
       const sx = x0 + si * span, sy = y + (si % 2) * 2;
       ctx.beginPath();
       ctx.ellipse(sx + 1.5, sy + 2, r + 1.5, ry + 1.2, 0, 0, Math.PI * 2);
@@ -876,6 +1014,32 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(text, x, ly + 0.5);
     }
+  }
+
+  // stacks of printed chips / plaques, plaques laid slightly fanned
+  function drawCasinoStacks(ctx, x, y, stacks) {
+    const widths = stacks.map(([i]) => (chipSet[i].kind === 'plaque' ? PQ.w : 2 * CC.r) + 3);
+    let sx = x - widths.reduce((a, b) => a + b, 0) / 2;
+    stacks.forEach(([i, count], si) => {
+      const d = chipSet[i], w = widths[si];
+      const cx = sx + w / 2, sy = y + (si % 2) * 2;
+      sx += w;
+      ctx.beginPath();
+      if (d.kind === 'plaque') { roundRect(ctx, cx - PQ.w / 2 + 1.5, sy - PQ.d / 2 + 2, PQ.w, PQ.d, 2); }
+      else ctx.ellipse(cx + 1.5, sy + 2, CC.r + 1.5, CC.ry + 1.2, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fill();
+      for (let k = 0; k < count; k++) {
+        const jitter = ((k * 37 + si * 11) % 7 - 3) * 0.2;
+        if (d.kind === 'plaque') {
+          const top = sy - PQ.d / 2 - PQ.t - k * PQ.t;
+          ctx.drawImage(casinoSprite(i, 0), cx - PQ.w / 2 - 1 + jitter * 2, top - 1, PQ.w + 2, PQ.d + PQ.t + 2);
+        } else {
+          const top = sy - CC.t - k * CC.t;
+          ctx.drawImage(casinoSprite(i, (k + si) % 3), cx - CC.r - 1 + jitter, top - CC.ry - 1, 2 * CC.r + 2, 2 * CC.ry + CC.t + 2);
+        }
+      }
+    });
   }
 
   function drawDealerButton(ctx, x, y) {

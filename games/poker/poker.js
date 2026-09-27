@@ -27,7 +27,12 @@
   function rankLabel(r) { return RANK_NAMES[r] || String(r); }
 
   // chip amounts are shown as Indian Rupees with Indian digit grouping (₹1,00,000)
-  function rupees(n) { return '\u20b9' + Number(n || 0).toLocaleString('en-IN'); }
+  function rupees(n) {
+    n = Number(n || 0);
+    // crore-sized amounts read as '₹550 Cr' so buttons and badges stay short
+    if (Math.abs(n) >= 1e7) return '\u20b9' + (n / 1e7).toLocaleString('en-IN', { maximumFractionDigits: 2 }) + ' Cr';
+    return '\u20b9' + n.toLocaleString('en-IN');
+  }
 
   // ---------- deck ----------
   function freshDeck() {

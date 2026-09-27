@@ -102,6 +102,15 @@
     {
       id: 'royale', name: 'Royale', icon: '🎩', section: 'high', start: 10000000,
       tagline: 'Black tie. Monte-Carlo classic.',
+      chips: [
+        { v: 10000000, kind: 'plaque', label: '₹1 Cr', base: '#e8731c', spot: '#ffffff' },
+        { v: 5000000, kind: 'plaque', label: '₹50 L', base: '#c8202e', spot: '#ffffff' },
+        { v: 1000000, kind: 'plaque', label: '₹10 L', base: '#5b2a86', spot: '#ffffff' },
+        { v: 500000, kind: 'chip', label: '5 L', base: '#18181b', spot: '#ffffff' },
+        { v: 100000, kind: 'chip', label: '1 L', base: '#5b2a86', spot: '#ffffff' },
+        { v: 50000, kind: 'chip', label: '50K', base: '#1c7a3e', spot: '#ffffff' },
+        { v: 10000, kind: 'chip', label: '10K', base: '#c8202e', spot: '#ffffff' }
+      ],
       ui: { bg: '#050403', bg2: '#1b140c', panel: '#110d09', panel2: '#1d1712', border: '#3d3120', accent: '#d4af37', accentText: '#1a1204', muted: '#b5a58a', serif: true },
       table: {
         room: ['#2a1b12', '#120a06', '#020101'],
@@ -117,8 +126,17 @@
       }
     },
     {
-      id: 'elite', name: 'Elite', icon: '⚜️', section: 'high', start: 1000000000,
+      id: 'elite', name: 'Elite', icon: '⚜️', section: 'high', start: 100000000000,
       tagline: 'Black & gold. The final table.',
+      chips: [
+        { v: 100000000000, kind: 'plaque', label: '₹10,000 Cr', base: '#e8731c', spot: '#ffffff' },
+        { v: 50000000000, kind: 'plaque', label: '₹5,000 Cr', base: '#8fae3a', spot: '#ffffff' },
+        { v: 10000000000, kind: 'plaque', label: '₹1,000 Cr', base: '#18181b', spot: '#ffffff' },
+        { v: 5000000000, kind: 'chip', label: '500 Cr', base: '#1f3f99', spot: '#ffffff' },
+        { v: 1000000000, kind: 'chip', label: '100 Cr', base: '#18181b', spot: '#ffffff' },
+        { v: 500000000, kind: 'chip', label: '50 Cr', base: '#1c7a3e', spot: '#ffffff' },
+        { v: 100000000, kind: 'chip', label: '10 Cr', base: '#c8202e', spot: '#ffffff' }
+      ],
       ui: { bg: '#020202', bg2: '#141008', panel: '#0b0a08', panel2: '#171410', border: '#3a2f16', accent: '#f5d27f', accentText: '#140e02', muted: '#a8997a', serif: true },
       table: {
         room: ['#15110a', '#070604', '#000000'],
