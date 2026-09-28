@@ -25,7 +25,7 @@
     spider: {
       name: 'Spider-Man', icon: '🕷️', title: 'Web Tic Tac Toe',
       bg: ['#16204a', '#060a1c'], board: '#1f3170', line: '#e8323f', accent: '#e8323f', accentText: '#fff', text: '#f4f6ff', muted: '#b7c2ec',
-      x: { em: '🕷️', name: 'Spidey', color: '#ff5a64' }, o: { em: '🦎', name: 'Lizard', color: '#7ee07e' },
+      x: { em: '🕷️', name: 'Spidey', color: '#ff5a64' }, o: { em: '🐞', name: 'Bug', color: '#ff8a3d' },
       pattern: 'web', confetti: ['🕸️', '💥', '⭐'], win: 'swings to victory!'
     },
     ramayan: {
