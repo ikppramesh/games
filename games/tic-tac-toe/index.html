@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Tic Tac Toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">&larr; Game Room</a>
+    <h1><span id="themeIcon">❌</span> <span id="themeTitle">Tic Tac Toe</span></h1>
+    <span class="spacer"></span>
+  </header>
+
+  <main class="wrap">
+    <div class="themes" id="themes" role="tablist" aria-label="Choose a theme"></div>
+
+    <div class="scoreboard">
+      <div class="side" id="sideX"><span class="mark" id="markX"></span><div><b id="nameX">Player 1</b><small id="winsX">0 wins</small></div></div>
+      <div class="draws"><small>Draws</small><b id="draws">0</b></div>
+      <div class="side" id="sideO"><div class="right"><b id="nameO">Player 2</b><small id="winsO">0 wins</small></div><span class="mark" id="markO"></span></div>
+    </div>
+
+    <div class="status" id="status">Choose how to play</div>
+
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <svg class="grid" viewBox="0 0 300 300" aria-hidden="true">
+          <path d="M100 12 V288 M200 12 V288 M12 100 H288 M12 200 H288" />
+        </svg>
+        <div class="cells" id="cells"></div>
+        <svg class="winline" viewBox="0 0 300 300" aria-hidden="true"><line id="winLine" x1="0" y1="0" x2="0" y2="0" /></svg>
+        <div class="confetti" id="confetti"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" id="againBtn" type="button" hidden>Play again</button>
+      <button class="btn" id="menuBtn" type="button" hidden>Change mode</button>
+    </div>
+
+    <!-- setup -->
+    <section class="setup" id="setup">
+      <div class="tabs">
+        <button class="tab active" data-tab="cpu" type="button">🤖 Vs Computer</button>
+        <button class="tab" data-tab="pass" type="button">👥 Pass &amp; Play</button>
+        <button class="tab" data-tab="online" type="button">🌐 Online</button>
+      </div>
+      <div class="pane" id="pane-cpu">
+        <div class="seg" id="level">
+          <button data-v="easy" type="button">Easy</button>
+          <button data-v="medium" class="active" type="button">Medium</button>
+          <button data-v="hard" type="button">Hard</button>
+        </div>
+        <button class="btn primary wide" id="cpuBtn" type="button">Start</button>
+      </div>
+      <div class="pane" id="pane-pass" hidden>
+        <p class="hint">Two players take turns on this device.</p>
+        <button class="btn primary wide" id="passBtn" type="button">Start</button>
+      </div>
+      <div class="pane" id="pane-online" hidden>
+        <input type="text" id="myName" maxlength="14" placeholder="Your name" />
+        <div class="row">
+          <button class="btn primary" id="hostBtn" type="button">Create game</button>
+          <input type="text" id="joinCode" maxlength="8" placeholder="Code" style="text-transform:uppercase" />
+          <button class="btn" id="joinBtn" type="button">Join</button>
+        </div>
+        <div class="invite" id="invite" hidden>
+          <span>Share code <b id="code">-----</b></span>
+          <button class="btn" id="copyBtn" type="button">Copy link</button>
+        </div>
+        <p class="hint" id="onlineMsg"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="net.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

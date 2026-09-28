@@ -17,7 +17,7 @@ Play it live:
 | 🔢 2048 (Barbie, Batman, Spider-Man, Ramayan themes) | Live | [`games/2048/`](games/2048/) |
 | ♞ Chess: Royal Armies | Live | [`games/chess/`](games/chess/) |
 | 🏠 Monopoly / Indian Business | Planned | — |
-| ❌⭕ Tic Tac Toe | Planned | — |
+| ❌⭕ Tic Tac Toe (Classic, Barbie, Batman, Spider-Man, Ramayan themes) | Live | [`games/tic-tac-toe/`](games/tic-tac-toe/) |
 
 ## How online play works
 
