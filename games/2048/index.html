@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>2048</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">&larr; Game Room</a>
+    <h1><span id="themeIcon">🎀</span> <span id="themeTitle">2048</span></h1>
+    <span class="spacer"></span>
+  </header>
+
+  <main class="wrap">
+    <div class="themes" id="themes" role="tablist" aria-label="Choose a theme"></div>
+
+    <div class="scores">
+      <div class="score"><small>Score</small><b id="score">0</b><i class="plus" id="plus"></i></div>
+      <div class="score"><small>Best</small><b id="best">0</b></div>
+      <button class="btn" id="undoBtn" type="button" title="Undo last move">↶ Undo</button>
+      <button class="btn primary" id="newBtn" type="button">New game</button>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board" aria-label="2048 board" tabindex="0">
+        <div class="cells" id="cells"></div>
+        <div class="tiles" id="tiles"></div>
+        <div class="overlay" id="overlay" hidden>
+          <div class="ov-box">
+            <div class="ov-icon" id="ovIcon">🏆</div>
+            <h2 id="ovTitle">You win!</h2>
+            <p id="ovText"></p>
+            <div class="ov-actions">
+              <button class="btn primary" id="ovMain" type="button">Keep going</button>
+              <button class="btn" id="ovNew" type="button">New game</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="journey" id="journey" aria-label="Tiles reached"></div>
+    <p class="hint">Swipe, or use the arrow keys, to slide the tiles. Two matching tiles merge into the next one &mdash; reach <b>2048</b>!</p>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

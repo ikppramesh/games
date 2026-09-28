@@ -14,19 +14,21 @@
     --muted:#8ea0b3;
   }
   *{box-sizing:border-box;}
+  html{min-height:100%; background:var(--bg);}
   html, body{height:100%;}
   body{
     margin:0;
-    height:100dvh;
-    overflow:hidden;
-    background:radial-gradient(circle at 20% 0%, #1c2b3a 0%, var(--bg) 60%);
+    min-height:100dvh;
+    height:auto;
+    overflow-x:hidden;
+    background:radial-gradient(circle at 20% 0%, #1c2b3a 0%, var(--bg) 60%) fixed;
     color:var(--text);
     font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    gap:clamp(16px, 3.5vh, 40px);
+    gap:clamp(14px, 3vh, 32px);
     padding:clamp(14px, 3vh, 40px) 20px;
   }
   header{
@@ -45,7 +47,7 @@
   }
   .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
     gap:clamp(12px, 2vh, 24px);
     width:100%;
     max-width:920px;
@@ -132,6 +134,11 @@
     .card h2{font-size:0.98rem;}
     .badge{top:10px; right:10px; font-size:0.6rem; padding:3px 7px;}
   }
+  .category{
+    width:100%; max-width:920px; margin:0 0 -8px;
+    font-size:clamp(0.95rem, 1.9vh, 1.1rem); letter-spacing:0.04em; color:var(--muted);
+    text-transform:uppercase; font-weight:600;
+  }
   footer{
     flex:0 0 auto;
     color:var(--muted);
@@ -146,6 +153,7 @@
     <p>Browser games you can play online with a friend &mdash; no installs, just share a link.</p>
   </header>
 
+  <h2 class="category">🎲 Table &amp; Board Games</h2>
   <div class="grid">
     <a class="card live" href="games/table-shuffleboard/index.html">
       <span class="badge live">Live</span>
@@ -196,6 +204,17 @@
       <p>Quick and simple, online with a friend.</p>
     </div>
   </div>
+
+  <h2 class="category">🧩 Puzzle Games</h2>
+  <div class="grid">
+    <a class="card live" href="games/2048/index.html">
+      <span class="badge live">New</span>
+      <span class="emoji">🔢</span>
+      <h2>2048</h2>
+      <p>Slide and merge tiles to reach 2048. Four themes: Barbie, Batman, Spider-Man and Ramayan. Solo, swipe or arrow keys.</p>
+    </a>
+  </div>
+
 
   <footer>
     More games are added over time &mdash; check back soon.<br>

@@ -14,6 +14,7 @@ Play it live:
 | ♠️ Texas Hold'em Poker | Live | [`games/poker/`](games/poker/) |
 | 🐍 Snakes & Ladders | Live | [`games/snake-and-ladder/`](games/snake-and-ladder/) |
 | 🃏 UNO Ultimate | Live | [`games/UNO/`](games/UNO/) |
+| 🔢 2048 (Barbie, Batman, Spider-Man, Ramayan themes) | Live | [`games/2048/`](games/2048/) |
 | ♞ Chess: Royal Armies | Live | [`games/chess/`](games/chess/) |
 | 🏠 Monopoly / Indian Business | Planned | — |
 | ❌⭕ Tic Tac Toe | Planned | — |
