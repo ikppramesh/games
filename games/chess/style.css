@@ -224,3 +224,44 @@ input[type="text"]:focus{outline:none; border-color:var(--accent);}
   .secondary-btn{padding:6px; margin-top:4px;}
   .view-tools .tip{display:none;}
 }
+
+/* ---------- close-ups: look mode, focus card, character gallery ---------- */
+.view-tools .wide-btn{width:auto; padding:0 10px; font-size:0.8rem; font-weight:600;}
+.view-tools .wide-btn.on{background:var(--accent); color:#1d1405; border-color:transparent;}
+.focus-card{
+  position:absolute; right:12px; bottom:12px; width:min(300px, calc(100% - 24px)); padding:12px 14px;
+  border-radius:14px; background:rgba(14,10,7,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(226,183,85,0.45); box-shadow:0 12px 30px rgba(0,0,0,0.5); animation:rise 0.25s ease-out;
+}
+.fc-name{font:700 1.1rem Cinzel, Georgia, serif; color:var(--accent-2);}
+.fc-desc{font-size:0.8rem; color:var(--muted); margin:4px 0 10px; line-height:1.45;}
+.fc-actions{display:flex; gap:6px;}
+.fc-actions button{flex:1; padding:7px; border-radius:9px; border:1px solid var(--border); background:var(--panel-2); font-size:0.8rem;}
+.fc-actions button:hover{border-color:var(--accent);}
+.gallery-box{
+  width:min(900px, 96vw); height:min(620px, 92dvh); display:flex; flex-direction:column;
+  background:linear-gradient(180deg, #2a1f16, #120c08); border:1px solid rgba(226,183,85,0.5); border-radius:18px;
+  box-shadow:0 24px 70px rgba(0,0,0,0.7); overflow:hidden; animation:rise 0.25s ease-out;
+}
+.gal-head{display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--border);}
+.gal-head h3{margin:0; font:700 1.15rem Cinzel, Georgia, serif; letter-spacing:0.05em;}
+.gal-close{border:none; background:transparent; font-size:1.6rem; color:var(--muted); line-height:1;}
+.gal-body{flex:1; min-height:0; display:flex;}
+.gal-stage{position:relative; flex:1 1 60%; min-width:0;}
+#galCanvas{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab;}
+.gal-nav{position:absolute; top:50%; transform:translateY(-50%); width:40px; height:56px; border-radius:12px; border:1px solid var(--border); background:rgba(14,10,7,0.7); font-size:1.8rem; color:var(--accent-2);}
+.gal-nav.prev{left:10px;} .gal-nav.next{right:10px;}
+.gal-tip{position:absolute; left:50%; bottom:10px; transform:translateX(-50%); font-size:0.72rem; color:var(--muted); background:rgba(0,0,0,0.4); padding:3px 10px; border-radius:999px; white-space:nowrap;}
+.gal-info{flex:0 0 300px; padding:14px 16px; overflow-y:auto; border-left:1px solid var(--border);}
+.gal-name{font:700 1.4rem Cinzel, Georgia, serif; color:var(--accent-2);}
+.gal-role{font-size:0.78rem; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-top:2px;}
+.gal-desc{font-size:0.85rem; color:var(--text); line-height:1.5; margin:10px 0 14px;}
+.gal-list{display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+.gal-list .gl-side{grid-column:1 / -1; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-top:6px;}
+.gal-list button{padding:6px 8px; border-radius:9px; border:1px solid var(--border); background:var(--panel-2); font-size:0.78rem; text-align:left;}
+.gal-list button.active{border-color:var(--accent); color:var(--accent-2); box-shadow:0 0 0 1px var(--accent) inset;}
+@media (max-width: 700px), (orientation: portrait){
+  .gal-body{flex-direction:column;}
+  .gal-stage{flex:1 1 55%; min-height:240px;}
+  .gal-info{flex:0 1 auto; border-left:none; border-top:1px solid var(--border); max-height:45%;}
+}

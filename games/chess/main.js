@@ -146,11 +146,113 @@
   $('settingsDone').onclick = () => { $('settingsModal').hidden = true; };
   $('settingsModal').addEventListener('click', (e) => { if (e.target.id === 'settingsModal') $('settingsModal').hidden = true; });
 
+  // ---------- character stories (for the close-up card and the gallery) ----------
+  const ROLES = { K: 'King', Q: 'Queen', R: 'Rook', B: 'Bishop', N: 'Knight', P: 'Pawn' };
+  const STORIES = {
+    ramayan: {
+      w: {
+        K: 'Maryada Purushottam, prince of Ayodhya. Blue-skinned, crowned with a golden kirit, he carries the Kodanda bow and a full quiver.',
+        Q: 'Janaki, princess of Mithila, in a red saree with a gold border, holding a lotus. The heart of the whole war.',
+        R: 'Pavanputra Hanuman, mighty devotee of Ram. Golden gada in one hand, the Sanjeevani mountain he carried from the Himalayas in the other.',
+        B: 'Ram\'s ever-loyal younger brother, archer and protector, in saffron with a crown and bow.',
+        N: 'The wise bear king who reminded Hanuman of his powers. Old, strong and shaggy, with a heavy club.',
+        P: 'The Vanara sena, the monkey army of Kishkindha that built the Ram Setu and marched to Lanka.'
+      },
+      b: {
+        K: 'Dashanan, the ten-headed king of Lanka, each head crowned. Armoured, caped, sword in hand.',
+        Q: 'Ravana\'s wise queen, who begged him to return Sita. Dark saree, jewelled tiara, a lotus in hand.',
+        R: 'Ravana\'s giant brother who slept six months at a time. Horns, tusks, red eyes and a spiked club.',
+        B: 'Meghnad, Ravana\'s son, who defeated Indra himself. Helmeted and armoured, a master archer.',
+        N: 'The rakshasa who became a golden deer with silver spots to lure Ram away from Sita.',
+        P: 'Lanka\'s demon warriors: horned, tusked and red-eyed, armed with tridents.'
+      }
+    },
+    armies: {
+      w: { K: 'The crowned king, sword raised.', Q: 'The queen, the strongest piece on the board.', R: 'A war elephant carrying a tower.', B: 'A camel rider\'s mount, swift on the diagonals.', N: 'A war horse that leaps over others.', P: 'Foot soldiers with spear and shield.' },
+      b: null
+    },
+    classic: {
+      w: { K: 'Classic Staunton king.', Q: 'Classic Staunton queen.', R: 'Classic Staunton rook.', B: 'Classic Staunton bishop.', N: 'Classic Staunton knight.', P: 'Classic Staunton pawn.' },
+      b: null
+    }
+  };
+  function story(type, side) {
+    const set = STORIES[prefs.pieces] || STORIES.armies;
+    return (set[side] || set.w)[type];
+  }
+
+  // double-click / double-tap a piece: fly in for a close look
+  function showFocus(type, side) {
+    $('fcName').textContent = pieceName(type, side);
+    $('fcDesc').textContent = story(type, side);
+    $('focusCard').hidden = false;
+    focusPiece = { type, side };
+  }
+  let focusPiece = null;
+  function hideFocus() { $('focusCard').hidden = true; focusPiece = null; }
+  if (R.focusSquare) {
+    $('fcBack').onclick = () => { hideFocus(); R.resetView(); };
+    $('fcGallery').onclick = () => openGallery(focusPiece);
+  }
+
+  // look mode: drag turns the board instead of moving pieces
+  let lookMode = false;
+  if (R.setLookMode) $('lookBtn').onclick = () => {
+    lookMode = !lookMode;
+    R.setLookMode(lookMode);
+    $('lookBtn').classList.toggle('on', lookMode);
+    selectSquare(-1);
+  };
+  else { $('lookBtn').hidden = true; $('galleryBtn').hidden = true; }
+
+  // ---------- character gallery ----------
+  let gallery = null, galOrder = [], galIndex = 0;
+  function openGallery(start) {
+    if (!R.createGallery) return;
+    if (!gallery) gallery = R.createGallery($('galCanvas'));
+    galOrder = [];
+    for (const side of ['w', 'b']) for (const t of ['K', 'Q', 'R', 'B', 'N', 'P']) galOrder.push({ type: t, side });
+    galIndex = Math.max(0, start ? galOrder.findIndex(g => g.type === start.type && g.side === start.side) : 0);
+    const armyName = (side) => prefs.pieces === 'ramayan' ? (side === 'w' ? "Ram's army" : "Ravana's army") : (side === 'w' ? 'Ivory' : 'Ebony');
+    $('galTitle').textContent = prefs.pieces === 'ramayan' ? 'Characters of the Ramayan' : 'The pieces';
+    $('galList').innerHTML = ['w', 'b'].map(side => `<div class="gl-side">${armyName(side)}</div>` +
+      ['K', 'Q', 'R', 'B', 'N', 'P'].map(t => `<button type="button" data-t="${t}" data-s="${side}">${pieceName(t, side)}</button>`).join('')).join('');
+    $('galleryModal').hidden = false;
+    gallery.start();
+    showGal();
+  }
+  function showGal() {
+    const g = galOrder[galIndex];
+    gallery.show(g.type, g.side);
+    $('galName').textContent = pieceName(g.type, g.side);
+    $('galRole').textContent = `${ROLES[g.type]} · ${prefs.pieces === 'ramayan' ? (g.side === 'w' ? "Ram's army" : "Ravana's army") : (g.side === 'w' ? 'Ivory' : 'Ebony')}`;
+    $('galDesc').textContent = story(g.type, g.side);
+    $('galList').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.t === g.type && b.dataset.s === g.side));
+  }
+  $('galList').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    galIndex = galOrder.findIndex(g => g.type === b.dataset.t && g.side === b.dataset.s);
+    showGal();
+  });
+  $('galPrev').onclick = () => { galIndex = (galIndex + galOrder.length - 1) % galOrder.length; showGal(); };
+  $('galNext').onclick = () => { galIndex = (galIndex + 1) % galOrder.length; showGal(); };
+  const closeGallery = () => { $('galleryModal').hidden = true; if (gallery) gallery.stop(); };
+  $('galClose').onclick = closeGallery;
+  $('galleryModal').addEventListener('click', (e) => { if (e.target.id === 'galleryModal') closeGallery(); });
+  document.addEventListener('keydown', (e) => {
+    if ($('galleryModal').hidden) return;
+    if (e.key === 'Escape') closeGallery();
+    if (e.key === 'ArrowRight') $('galNext').click();
+    if (e.key === 'ArrowLeft') $('galPrev').click();
+  });
+  $('galleryBtn').onclick = () => openGallery(null);
+
   // ---------- camera ----------
   if (R.rotateView) {
     $('rotLeftBtn').onclick = () => R.rotateView(-45);
     $('rotRightBtn').onclick = () => R.rotateView(45);
-    $('resetViewBtn').onclick = () => R.resetView();
+    $('resetViewBtn').onclick = () => { hideFocus(); R.resetView(); };
   }
 
   // ---------- starting games ----------
@@ -287,14 +389,33 @@
 
   // click / tap, or drag a piece to its square (left button / one finger)
   let dragFrom = -1;
+  let lastTap = { sq: -1, t: 0 };
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     const sq = R.squareAt(e.clientX, e.clientY);
+    // double-click / double-tap on a piece: zoom in on it
+    const now = performance.now();
+    if (R.focusSquare && sq >= 0 && sq === lastTap.sq && now - lastTap.t < 450 && game.board()[sq]) {
+      lastTap = { sq: -1, t: 0 };
+      const f = R.focusSquare(sq);
+      if (f) { selectSquare(-1); showFocus(f.type, f.side); }
+      return;
+    }
+    lastTap = { sq, t: now };
+    if (lookMode) return;
     dragFrom = sq;
     onBoardClick(sq);
   });
+  // desktop browsers also report a native double-click
+  canvas.addEventListener('dblclick', (e) => {
+    if (!R.focusSquare) return;
+    const sq = R.squareAt(e.clientX, e.clientY);
+    if (sq < 0 || !game.board()[sq]) return;
+    const f = R.focusSquare(sq);
+    if (f) { selectSquare(-1); showFocus(f.type, f.side); }
+  });
   canvas.addEventListener('pointerup', (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || lookMode) return;
     const sq = R.squareAt(e.clientX, e.clientY);
     if (dragFrom >= 0 && sq >= 0 && sq !== dragFrom && selected === dragFrom) onBoardClick(sq);
     dragFrom = -1;

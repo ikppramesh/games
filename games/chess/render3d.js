@@ -374,135 +374,307 @@ if (webglOK()) {
   // ---------- Ramayan set: Ram's army (white) vs Ravana's army (black) ----------
   function ramMaterials() {
     const std = (color, rough, extra) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: rough == null ? 0.55 : rough }, extra || {}));
-    const phys = (color) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, clearcoat: 0.3 });
-    const gold = std(0xe8b84a, 0.25, { metalness: 1 });
-    const bronze = std(0xb8773a, 0.3, { metalness: 1 });
+    const skinMat = (color) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.48, clearcoat: 0.15, sheen: 0.4, sheenColor: new THREE.Color(0xffd8c0), sheenRoughness: 0.6 });
+    const fabric = (color) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.8, sheen: 0.35, sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.35), sheenRoughness: 0.7, side: THREE.DoubleSide });
+    const fur = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.92 });
+    const gold = std(0xf0c14f, 0.22, { metalness: 1 });
+    const bronze = std(0xc07a3a, 0.28, { metalness: 1 });
+    const shared = {
+      white: std(0xfbf6e8, 0.35), iris: std(0x1c120a, 0.2), lip: std(0xb04a4a, 0.45), red: std(0xc8102e, 0.35),
+      ruby: std(0xd0103a, 0.1, { metalness: 0.2, emissive: 0x300008 }), emerald: std(0x1f9e5a, 0.1, { metalness: 0.2 }),
+      pearl: new THREE.MeshPhysicalMaterial({ color: 0xfaf4ea, roughness: 0.15, clearcoat: 1 }),
+      steel: MAT.steel
+    };
     return {
-      w: {
+      w: Object.assign({}, shared, {
         body: MAT.w.body, trim: gold, cloth: MAT.w.cloth, eye: MAT.w.eye, mane: MAT.w.mane,
-        skin: { ram: phys(0x3f6fd6), fair: phys(0xe8b890), monkey: phys(0xc9863c), face: phys(0xf0c9a0), bear: phys(0x4a3526), bearFace: phys(0x7a5a40) },
-        cloth1: std(0xf5c542, 0.7, { side: THREE.DoubleSide }),   // pitambar yellow
-        cloth2: std(0xf07f1c, 0.7, { side: THREE.DoubleSide }),   // saffron
-        saree: std(0xc8202e, 0.65, { side: THREE.DoubleSide }),
-        hair: std(0x1a120c, 0.6), wood: std(0x6b4a2a, 0.6), green: std(0x3f7d3a, 0.8), pink: std(0xff8fb8, 0.5), white: std(0xfbf6e8, 0.4)
-      },
-      b: {
+        skin: { ram: skinMat(0x3c6fd8), fair: skinMat(0xe8b48c), monkey: fur(0xc9853a), face: skinMat(0xefc39a), bear: fur(0x3e2b1f), bearFace: fur(0x6e4e36) },
+        cloth1: fabric(0xf6c33c),   // pitambar yellow
+        cloth2: fabric(0xef7b1a),   // saffron
+        saree: fabric(0xc01d35), border: gold,
+        hair: std(0x160f0a, 0.55), wood: std(0x6b4524, 0.55), string: std(0xf4ecd8, 0.4), green: fur(0x3f7d3a), pink: std(0xff8fb8, 0.45)
+      }),
+      b: Object.assign({}, shared, {
         body: MAT.b.body, trim: bronze, cloth: MAT.b.cloth, eye: MAT.b.eye, mane: MAT.b.mane,
-        skin: { ravana: phys(0x3b2418), fair: phys(0x8a6448), demon: phys(0x2a1c26), giant: phys(0x2e2019), deer: std(0xe0a82e, 0.3, { metalness: 0.6 }), face: phys(0x2a1c26) },
-        cloth1: std(0x0e0a0b, 0.6, { side: THREE.DoubleSide }),   // black
-        cloth2: std(0x4a0a12, 0.65, { side: THREE.DoubleSide }),  // blood red
-        saree: std(0x1a0d1e, 0.6, { side: THREE.DoubleSide }),
-        hair: std(0x0b0808, 0.6), wood: std(0x3b2414, 0.6), green: std(0x2f4a2a, 0.8), pink: std(0x9b2a4a, 0.5), white: std(0xf4efe0, 0.4)
-      }
+        skin: { ravana: skinMat(0x3a2418), fair: skinMat(0x8a6448), demon: skinMat(0x2a1c26), giant: skinMat(0x2e2019), deer: std(0xe8b030, 0.25, { metalness: 0.7 }), face: skinMat(0x2a1c26) },
+        cloth1: fabric(0x0e0a0b),   // black
+        cloth2: fabric(0x5a0c16),   // blood red
+        saree: fabric(0x1a0d1e), border: bronze,
+        hair: std(0x080606, 0.55), wood: std(0x2e1c10, 0.55), string: std(0xd8ccb0, 0.4), green: fur(0x2f4a2a), pink: std(0x9b2a4a, 0.45),
+        redEye: std(0xff3020, 0.3, { emissive: 0xaa1000 })
+      })
     };
   }
 
-  // a standing figure; o = {skin, cloth, cloth2, face, crown, heads, weapon, left, gown, belly, tail, s}
+  // small decorative parts don't need to cast shadows
+  function deco(m) { m.castShadow = false; return m; }
+  function curve(key, pts, r, mat) { return tube(key, pts, r, mat); }
+
+  // ----- heads -----
+  // a human face looking along +x: skull, jaw, nose, brows, eyes with irises, lips, ears, hair
+  function humanHead(M, o, s) {
+    const g = new THREE.Group();
+    g.scale.setScalar(s || 1);
+    const skin = o.faceSkin || o.skin;
+    g.add(sphere(0.062, skin, 0.96, 1.1, 0.9));                              // skull
+    g.add(at(sphere(0.045, skin, 1.05, 0.9, 0.92), 0.018, -0.03, 0));        // jaw / chin
+    const nose = at(cone(0.011, 0.03, skin), 0.064, -0.004, 0); nose.rotation.z = -Math.PI / 2 + 0.2; g.add(nose);
+    for (const z of [-1, 1]) {
+      g.add(deco(at(sphere(0.012, M.white, 1, 0.8, 1), 0.051, 0.012, z * 0.022)));   // eye white
+      g.add(deco(at(sphere(0.0065, o.redEye ? M.redEye : M.iris), 0.061, 0.012, z * 0.022)));  // iris
+      const brow = deco(at(box(0.006, 0.005, 0.024, M.hair), 0.058, 0.028, z * 0.023)); brow.rotation.x = z * 0.15; g.add(brow);
+      g.add(at(sphere(0.014, skin, 0.5, 1.2, 0.7), -0.004, 0.0, z * 0.062));   // ear
+      if (o.earrings !== false) { const k = deco(at(torus(0.011, 0.003, M.trim), -0.002, -0.024, z * 0.066)); k.rotation.y = Math.PI / 2; g.add(k); }
+    }
+    g.add(deco(at(sphere(0.013, M.lip, 0.6, 0.35, 1.2), 0.058, -0.03, 0)));     // lips
+    if (o.mustache) for (const z of [-1, 1]) g.add(deco(curve('mus' + z, [[0.062, -0.02, 0], [0.06, -0.022, z * 0.018], [0.05, -0.012, z * 0.038]], 0.004, M.hair)));
+    if (o.tilak) {
+      g.add(deco(at(box(0.003, 0.02, 0.003, M.white), 0.061, 0.045, 0.006)), deco(at(box(0.003, 0.02, 0.003, M.white), 0.061, 0.045, -0.006)));
+      g.add(deco(at(box(0.003, 0.018, 0.003, M.red), 0.062, 0.044, 0)));
+    }
+    if (o.bindi) g.add(deco(at(sphere(0.004, M.red), 0.061, 0.036, 0)));
+    // hair: cap + (optionally) long hair down the back
+    g.add(at(sphere(0.065, M.hair, 0.98, 1.0, 0.95), -0.014, 0.014, 0));
+    if (o.longHair) g.add(at(sphere(0.06, M.hair, 0.7, 1.6, 1.05), -0.04, -0.07, 0));
+    if (o.braid) g.add(curve('braid', [[-0.05, 0, 0], [-0.07, -0.1, 0], [-0.07, -0.22, 0.01], [-0.06, -0.3, 0]], 0.014, M.hair));
+    if (o.wildHair) for (let i = 0; i < 9; i++) {
+      const a = -1.2 + i * 0.3;
+      const sp = at(cone(0.012, 0.06, M.hair), -0.01 + Math.cos(a) * -0.02, 0.05 + Math.cos(a) * 0.02, Math.sin(a) * 0.06);
+      sp.rotation.set(Math.sin(a) * 0.9, 0, 0.5); g.add(sp);
+    }
+    if (o.tusks) for (const z of [-1, 1]) { const t = deco(at(cone(0.006, 0.03, M.white), 0.056, -0.028, z * 0.016)); g.add(t); }
+    if (o.horns) for (const z of [-1, 1]) g.add(curve('horn' + z, [[0, 0.05, z * 0.035], [0.0, 0.09, z * 0.055], [0.03, 0.12, z * 0.05]], 0.009, M.white));
+    return g;
+  }
+
+  function monkeyHead(M, o, s) {
+    const g = new THREE.Group();
+    g.scale.setScalar(s || 1);
+    const fur = o.skin, face = M.skin.face;
+    g.add(sphere(0.064, fur, 1, 1.05, 0.95));
+    g.add(at(sphere(0.05, face, 0.8, 0.9, 1.05), 0.03, -0.005, 0));            // face mask
+    g.add(at(sphere(0.036, face, 1.15, 0.8, 1.05), 0.058, -0.026, 0));         // muzzle
+    g.add(deco(at(box(0.012, 0.01, 0.07, fur), 0.056, 0.024, 0)));             // brow ridge
+    for (const z of [-1, 1]) {
+      g.add(deco(at(sphere(0.011, M.white, 1, 0.85, 1), 0.058, 0.01, z * 0.02)));
+      g.add(deco(at(sphere(0.0065, M.iris), 0.066, 0.01, z * 0.02)));
+      g.add(at(sphere(0.022, face, 0.5, 1.1, 1), 0.0, 0.004, z * 0.066));       // round ears
+      g.add(deco(at(sphere(0.018, fur, 0.8, 1.2, 0.8), 0.03, -0.02, z * 0.05)));  // cheek fur
+      g.add(deco(at(sphere(0.004, M.iris), 0.093, -0.02, z * 0.008)));          // nostrils
+      if (o.earrings) { const k = deco(at(torus(0.012, 0.003, M.trim), 0, -0.02, z * 0.07)); k.rotation.y = Math.PI / 2; g.add(k); }
+    }
+    g.add(deco(at(box(0.004, 0.003, 0.03, M.iris), 0.086, -0.044, 0)));          // mouth
+    return g;
+  }
+
+  function bearHead(M, o, s) {
+    const g = new THREE.Group();
+    g.scale.setScalar(s || 1);
+    g.add(sphere(0.068, o.skin, 1, 1, 0.98));
+    g.add(at(sphere(0.036, M.skin.bearFace, 1.35, 0.8, 1), 0.066, -0.022, 0));
+    g.add(deco(at(sphere(0.014, M.iris, 1.2, 0.8, 1.2), 0.11, -0.012, 0)));
+    for (const z of [-1, 1]) {
+      g.add(deco(at(sphere(0.009, M.iris), 0.058, 0.016, z * 0.028)));
+      g.add(at(sphere(0.022, o.skin, 0.6, 1, 1), -0.01, 0.062, z * 0.046));
+      g.add(deco(at(sphere(0.012, M.skin.bearFace, 0.5, 1, 1), -0.004, 0.062, z * 0.046)));
+    }
+    for (let i = 0; i < 10; i++) {                                              // shaggy mane
+      const a = (i / 10) * Math.PI * 2;
+      g.add(deco(at(sphere(0.026, o.skin, 0.8, 1.2, 0.8), -0.03 + Math.cos(a) * 0.01, -0.035 + Math.sin(a) * 0.02, Math.sin(a) * 0.055)));
+    }
+    return g;
+  }
+
+  // ----- crowns -----
+  function mukut(M, h) {
+    const g = new THREE.Group();
+    h = h || 1;
+    g.add(at(cyl(0.066, 0.064, 0.03, M.trim, true), 0, 0, 0));
+    const band = deco(at(torus(0.066, 0.005, M.trim), 0, -0.012, 0)); band.rotation.x = Math.PI / 2; g.add(band);
+    g.add(at(lathe('kirit' + h, [[0, 0], [0.062, 0], [0.058, 0.04 * h], [0.045, 0.09 * h], [0.03, 0.14 * h], [0.016, 0.18 * h], [0, 0.2 * h]], M.trim, 24), 0, 0.012, 0));
+    for (let i = 0; i < 4; i++) { const r = deco(at(torus(0.06 - i * 0.011, 0.003, M.trim), 0, 0.03 + i * 0.04 * h, 0)); r.rotation.x = Math.PI / 2; g.add(r); }
+    g.add(deco(at(sphere(0.02, M.ruby, 0.5, 1.2, 1), 0.058, 0.03, 0)));           // front jewel
+    for (const z of [-1, 1]) g.add(deco(at(sphere(0.01, M.emerald), 0.045, 0.02, z * 0.04)));
+    const fan = deco(at(torus(0.05, 0.006, M.trim, Math.PI), 0.02, 0.045, 0)); fan.rotation.y = Math.PI / 2; g.add(fan);  // halo plate
+    g.add(deco(at(sphere(0.014, M.pearl), 0, 0.2 * h + 0.012, 0)));
+    return g;
+  }
+  function tiara(M) {
+    const g = new THREE.Group();
+    g.add(at(cyl(0.064, 0.066, 0.022, M.trim, true), 0, 0, 0));
+    for (let i = 0; i < 7; i++) {
+      const a = -0.9 + i * 0.3;
+      g.add(deco(at(cone(0.01, 0.04 + (i === 3 ? 0.03 : 0), M.trim), Math.cos(a) * 0.062, 0.03, Math.sin(a) * 0.062)));
+    }
+    g.add(deco(at(sphere(0.013, M.ruby), 0.063, 0.015, 0)));
+    const chain = deco(curve('mangtika', [[0.05, 0.02, 0], [0.062, -0.01, 0], [0.066, -0.03, 0]], 0.002, M.trim)); g.add(chain);
+    g.add(deco(at(sphere(0.006, M.pearl), 0.067, -0.034, 0)));
+    return g;
+  }
+
+  // ----- weapons & props (built along +y from the grip) -----
+  function bow(M) {
+    const g = new THREE.Group();
+    const pts = [[0.02, -0.26, 0], [0.07, -0.18, 0], [0.06, -0.06, 0], [0.04, 0, 0], [0.06, 0.06, 0], [0.07, 0.18, 0], [0.02, 0.26, 0]];
+    g.add(curve('bowlimb', pts, 0.009, M.wood));
+    g.add(deco(at(box(0.002, 0.52, 0.002, M.string), -0.0, 0, 0)));
+    for (const y of [-0.26, 0.26]) g.add(deco(at(sphere(0.012, M.trim), 0.02, y, 0)));
+    g.add(deco(at(cyl(0.013, 0.013, 0.05, M.trim), 0.045, 0, 0)));
+    g.position.y = 0.06;
+    return g;
+  }
+  function gada(M) {
+    const g = new THREE.Group();
+    g.add(at(cyl(0.012, 0.012, 0.3, M.trim), 0, 0.12, 0));
+    for (const y of [0.02, 0.12, 0.22]) { const r = deco(at(torus(0.014, 0.004, M.trim), 0, y, 0)); r.rotation.x = Math.PI / 2; g.add(r); }
+    g.add(at(lathe('gadahead', [[0, 0], [0.03, 0.005], [0.07, 0.04], [0.078, 0.08], [0.065, 0.12], [0.035, 0.15], [0.015, 0.17], [0, 0.18]], M.trim), 0, 0.26, 0));
+    for (let i = 0; i < 8; i++) { const r = deco(at(box(0.004, 0.1, 0.004, M.trim), Math.cos(i * 0.785) * 0.075, 0.34, Math.sin(i * 0.785) * 0.075)); g.add(r); }
+    g.add(deco(at(sphere(0.016, M.ruby), 0, 0.45, 0)));
+    return g;
+  }
+  function club(M, spiked) {
+    const g = new THREE.Group();
+    g.add(at(cyl(0.045, 0.016, 0.38, M.wood), 0, 0.17, 0));
+    for (const y of [0.1, 0.22, 0.3]) g.add(deco(at(sphere(0.02, M.wood), 0.03, y, (y * 7 % 2 ? 1 : -1) * 0.02)));
+    if (spiked) for (let i = 0; i < 10; i++) { const a = i * 1.3, y = 0.22 + (i % 4) * 0.035; const sp = deco(at(cone(0.008, 0.035, M.steel), Math.cos(a) * 0.04, y, Math.sin(a) * 0.04)); sp.rotation.set(Math.sin(a) * 1.5, 0, -Math.cos(a) * 1.5); g.add(sp); }
+    const band = deco(at(torus(0.03, 0.006, M.trim), 0, 0.24, 0)); band.rotation.x = Math.PI / 2; g.add(band);
+    return g;
+  }
+  function trident(M) {
+    const g = new THREE.Group();
+    g.add(at(cyl(0.007, 0.007, 0.5, M.wood), 0, 0.2, 0));
+    g.add(deco(at(box(0.012, 0.012, 0.09, M.steel), 0, 0.44, 0)));
+    for (const z of [-0.042, 0, 0.042]) { const p = deco(at(cone(0.011, 0.08, M.steel), 0, 0.49 + (z ? 0 : 0.02), z)); g.add(p); }
+    g.add(deco(at(sphere(0.012, M.trim), 0, 0.42, 0)));
+    return g;
+  }
+  function sword(M) {
+    const g = new THREE.Group();
+    g.add(at(box(0.026, 0.42, 0.007, M.steel), 0, 0.26, 0), deco(at(cone(0.013, 0.04, M.steel), 0, 0.49, 0)));
+    g.add(at(box(0.11, 0.018, 0.026, M.trim), 0, 0.05, 0), at(cyl(0.011, 0.011, 0.06, M.trim), 0, 0.015, 0), deco(at(sphere(0.018, M.ruby), 0, -0.02, 0)));
+    return g;
+  }
+  function lotus(M) {
+    const g = new THREE.Group();
+    g.add(at(cyl(0.005, 0.005, 0.16, M.green), 0, 0.06, 0));
+    for (let i = 0; i < 8; i++) {
+      const a = i * 0.785, pt = deco(at(sphere(0.026, M.pink, 0.5, 1.2, 0.5), Math.cos(a) * 0.018, 0.17, Math.sin(a) * 0.018));
+      pt.rotation.set(Math.sin(a) * 0.7, 0, -Math.cos(a) * 0.7); g.add(pt);
+    }
+    g.add(deco(at(sphere(0.012, M.trim), 0, 0.17, 0)));
+    return g;
+  }
+  function quiver(M) {
+    const g = new THREE.Group();
+    g.add(at(cyl(0.026, 0.02, 0.22, M.wood), 0, 0, 0));
+    for (const y of [-0.08, 0.08]) { const r = deco(at(torus(0.026, 0.004, M.trim), 0, y, 0)); r.rotation.x = Math.PI / 2; g.add(r); }
+    for (let i = 0; i < 4; i++) {
+      g.add(deco(at(cyl(0.003, 0.003, 0.08, M.wood), (i - 1.5) * 0.008, 0.14, (i % 2) * 0.008)));
+      g.add(deco(at(cone(0.008, 0.03, M.red), (i - 1.5) * 0.008, 0.19, (i % 2) * 0.008)));
+    }
+    return g;
+  }
+  function mountain(M) {
+    const g = new THREE.Group();
+    g.add(at(cone(0.1, 0.17, M.green), 0, 0.085, 0), at(cone(0.06, 0.11, M.green), 0.05, 0.09, 0.05), at(cone(0.05, 0.09, M.green), -0.04, 0.06, -0.05));
+    for (let i = 0; i < 4; i++) g.add(deco(at(sphere(0.012, i % 2 ? M.pink : M.trim), Math.cos(i * 1.6) * 0.06, 0.08 + i * 0.015, Math.sin(i * 1.6) * 0.06)));
+    return g;
+  }
+
+  // ----- the figure -----
+  // o: {skin, cloth, cloth2, head:'human'|'monkey'|'bear', crown, heads, weapon, left, gown, belly, tail, s, armor, cape, ...face options}
   function buildHero(M, o) {
     const root = new THREE.Group(), fig = new THREE.Group(), parts = {};
     root.add(fig);
     fig.scale.setScalar(o.s || 1);
-    const skin = o.skin, cl = o.cloth || M.cloth1, cl2 = o.cloth2 || M.trim;
-    // legs (hidden under a gown, but still animated)
+    const skin = o.skin, cl = o.cloth || M.cloth1, cl2 = o.cloth2 || M.cloth2;
+    const bulk = o.belly ? 1.35 : o.muscular ? 1.15 : 1;
+    const limbSkin = o.skinArm || skin;
+
+    // legs pivot at the hips (thigh, shin, anklet, foot)
     parts.legs = [];
-    for (const z of [-0.045, 0.045]) {
-      const leg = at(new THREE.Group(), 0, 0.3, z);
-      leg.add(limb([0, 0, 0], [0, -0.26, 0], o.belly ? 0.045 : 0.034, skin), at(box(0.075, 0.02, 0.045, M.trim), 0.015, -0.285, 0));
+    for (const z of [-0.048, 0.048]) {
+      const leg = at(new THREE.Group(), 0, 0.32, z * bulk);
+      leg.add(limb([0, 0, 0], [0.006, -0.15, 0], 0.036 * bulk, limbSkin), limb([0.006, -0.15, 0], [0, -0.29, 0], 0.028 * bulk, limbSkin));
+      const ank = deco(at(torus(0.027, 0.005, M.trim), 0, -0.285, 0)); ank.rotation.x = Math.PI / 2; leg.add(ank);
+      leg.add(at(sphere(0.03, limbSkin, 1.6, 0.55, 1), 0.02, -0.308, 0));
       parts.legs.push(leg); fig.add(leg);
     }
-    if (o.gown) fig.add(lathe('rgown', [[0, 0.01], [0.17, 0.01], [0.16, 0.05], [0.12, 0.25], [0.09, 0.45], [0.075, 0.54], [0, 0.55]], cl));
-    else fig.add(lathe('rdhoti', [[0, 0.17], [0.1, 0.17], [0.12, 0.22], [0.11, 0.3], [0.095, 0.36], [0, 0.36]], cl));
-    // torso
-    fig.add(lathe(o.belly ? 'rtorsoB' : 'rtorso', o.belly
-      ? [[0, 0.33], [0.1, 0.33], [0.14, 0.42], [0.12, 0.52], [0.07, 0.57], [0, 0.58]]
-      : [[0, 0.33], [0.08, 0.33], [0.095, 0.44], [0.09, 0.52], [0.055, 0.565], [0, 0.57]], o.gown ? cl : skin));
-    const sash = at(torus(o.belly ? 0.12 : 0.088, 0.012, cl2), 0, 0.37, 0); sash.rotation.x = Math.PI / 2; fig.add(sash);
-    const neck = at(torus(0.05, 0.01, M.trim), 0, 0.55, 0); neck.rotation.x = Math.PI / 2 - 0.25; fig.add(neck);
-    if (!o.gown) { const uttariya = at(torus(0.09, 0.012, cl), 0.005, 0.47, 0); uttariya.rotation.set(Math.PI / 2, 0.55, 0); fig.add(uttariya); }
-    // head(s)
-    const headY = 0.64;
-    const head = (y, z, s) => {
-      const g = at(new THREE.Group(), 0.005, y, z);
-      g.scale.setScalar(s);
-      g.add(sphere(0.066, o.face === 'monkey' || o.face === 'bear' ? skin : o.faceSkin || skin));
-      if (o.face === 'monkey') {
-        g.add(at(sphere(0.042, M.skin.face, 1.1, 0.8, 1.1), 0.05, -0.018, 0));
-        g.add(at(sphere(0.022, M.skin.face), 0.005, 0.005, 0.068), at(sphere(0.022, M.skin.face), 0.005, 0.005, -0.068));
-      } else if (o.face === 'bear') {
-        g.add(at(sphere(0.036, M.skin.bearFace, 1.3, 0.8, 1), 0.06, -0.02, 0), at(sphere(0.013, M.hair), 0.1, -0.014, 0));
-        g.add(at(sphere(0.022, skin), -0.01, 0.06, 0.045), at(sphere(0.022, skin), -0.01, 0.06, -0.045));
-      } else if (o.face === 'demon') {
-        const h1 = at(cone(0.014, 0.07, M.white), 0.01, 0.07, 0.035), h2 = at(cone(0.014, 0.07, M.white), 0.01, 0.07, -0.035);
-        h1.rotation.x = -0.4; h2.rotation.x = 0.4; g.add(h1, h2);
-        const f1 = at(cone(0.006, 0.02, M.white), 0.06, -0.035, 0.015), f2 = at(cone(0.006, 0.02, M.white), 0.06, -0.035, -0.015);
-        f1.rotation.z = f2.rotation.z = Math.PI; g.add(f1, f2);
-      } else {
-        g.add(at(sphere(0.07, M.hair, 0.95, 0.9, 1.02), -0.012, 0.012, 0));
-        if (o.hairLong) g.add(at(sphere(0.07, M.hair, 0.8, 1.5, 0.95), -0.035, -0.06, 0));
-        g.add(at(sphere(0.006, M.trim), 0.062, 0.022, 0)); // tilak
-      }
-      g.add(at(sphere(0.009, M.eye), 0.057, 0.008, 0.023), at(sphere(0.009, M.eye), 0.057, 0.008, -0.023));
-      return g;
-    };
-    const heads = o.heads || 1;
-    const main = head(headY, 0, 1);
-    fig.add(main);
-    for (let i = 1; i < heads; i++) {
-      const side = i % 2 ? 1 : -1, k = Math.ceil(i / 2);
-      fig.add(head(headY - 0.004 * k, side * 0.105 * k, 0.86 - 0.025 * k));
-      fig.add(at(cyl(0.045, 0.055, 0.05, M.trim, true), -0.01, headY + 0.06, side * 0.105 * k));
-    }
-    // crown
-    const cy = headY + 0.058;
-    if (o.crown === 'mukut') {
-      fig.add(at(lathe('mukut', [[0, 0], [0.066, 0], [0.07, 0.04], [0.05, 0.1], [0.035, 0.15], [0.012, 0.19], [0, 0.2]], M.trim), 0, cy, 0));
-      fig.add(at(sphere(0.018, M.saree), 0.058, cy + 0.03, 0));
-    } else if (o.crown === 'tiara') {
-      fig.add(at(cyl(0.062, 0.066, 0.03, M.trim, true), 0, cy - 0.005, 0));
-      for (let i = 0; i < 5; i++) fig.add(at(cone(0.012, 0.04, M.trim), Math.cos(i * 1.26) * 0.06, cy + 0.03, Math.sin(i * 1.26) * 0.06));
-    } else if (o.crown === 'band') {
-      const b = at(torus(0.066, 0.01, M.trim), 0, cy - 0.01, 0); b.rotation.x = Math.PI / 2; fig.add(b);
-    }
-    if (o.tail) fig.add(tube(o.tail, [[-0.08, 0.3, 0], [-0.2, 0.28, 0], [-0.25, 0.45, 0], [-0.2, 0.58, 0]], 0.016, skin));
-    // left arm (static) + what it holds
-    fig.add(limb([0, 0.52, -0.1], [0.06, 0.38, -0.14], 0.028, o.gown ? o.skinArm || skin : skin));
-    if (o.left === 'mountain') {
-      const m = group(at(cone(0.1, 0.16, M.green), 0, 0.08, 0), at(cone(0.06, 0.1, M.green), 0.05, 0.1, 0.04), at(sphere(0.02, M.pink), 0.03, 0.1, -0.05));
-      fig.add(at(m, 0.08, 0.36, -0.2));
-    } else if (o.left === 'lotus') {
-      fig.add(at(sphere(0.03, M.pink, 1, 0.7, 1), 0.08, 0.37, -0.15));
-    } else if (o.left === 'quiver') {
-      const q = at(cyl(0.025, 0.02, 0.2, M.wood), -0.07, 0.48, 0.03); q.rotation.z = 0.4; fig.add(q);
-      for (let i = 0; i < 3; i++) fig.add(at(cone(0.008, 0.03, M.white), -0.1 + i * 0.005, 0.6, 0.02 + i * 0.012));
-    }
-    // right arm pivots at the shoulder with the weapon (parts.arm)
-    const arm = at(new THREE.Group(), 0, 0.52, 0.1);
-    arm.add(limb([0, 0, 0], [0.09, -0.12, 0.01], 0.028, o.skinArm || skin));
-    const w = at(new THREE.Group(), 0.095, -0.13, 0.01);
-    if (o.weapon === 'bow') {
-      const bow = at(torus(0.24, 0.011, M.wood, Math.PI * 0.9), 0.02, 0.05, 0);
-      bow.rotation.z = Math.PI / 2 + 0.16;
-      w.add(bow, at(box(0.003, 0.46, 0.003, M.white), -0.02, 0.05, 0), at(sphere(0.016, M.trim), 0, 0, 0));
-    } else if (o.weapon === 'gada') {
-      w.add(at(cyl(0.013, 0.013, 0.34, M.trim), 0, 0.14, 0), at(sphere(0.07, M.trim), 0, 0.33, 0), at(cone(0.02, 0.05, M.trim), 0, 0.42, 0));
-    } else if (o.weapon === 'club') {
-      w.add(at(cyl(0.04, 0.018, 0.36, M.wood), 0, 0.16, 0));
-    } else if (o.weapon === 'trident') {
-      w.add(at(cyl(0.008, 0.008, 0.5, M.wood), 0, 0.2, 0));
-      for (const z of [-0.035, 0, 0.035]) w.add(at(cone(0.012, 0.07, M.trim), 0, 0.47 + (z ? 0 : 0.02), z));
-      w.add(at(box(0.012, 0.012, 0.08, M.trim), 0, 0.43, 0));
-    } else if (o.weapon === 'lotus') {
-      // a lotus on a stem, held up (the queens bless rather than fight)
-      w.add(at(cyl(0.006, 0.006, 0.16, M.green), 0, 0.06, 0));
-      for (let i = 0; i < 6; i++) {
-        const pt = at(sphere(0.028, M.pink, 0.55, 1.2, 0.55), Math.cos(i * 1.05) * 0.02, 0.17, Math.sin(i * 1.05) * 0.02);
-        pt.rotation.set(Math.sin(i * 1.05) * 0.6, 0, -Math.cos(i * 1.05) * 0.6);
-        w.add(pt);
-      }
-      w.add(at(sphere(0.014, M.trim), 0, 0.17, 0));
+    // lower garment: flowing saree / dhoti with a gold border and front pleats
+    if (o.gown) {
+      fig.add(lathe('rgown2', [[0, 0.005], [0.18, 0.005], [0.172, 0.04], [0.14, 0.16], [0.11, 0.3], [0.09, 0.42], [0.08, 0.5], [0, 0.51]], cl, 36));
+      const hem = deco(at(torus(0.176, 0.009, M.border), 0, 0.02, 0)); hem.rotation.x = Math.PI / 2; fig.add(hem);
+      const mid = deco(at(torus(0.125, 0.006, M.border), 0, 0.2, 0)); mid.rotation.x = Math.PI / 2; fig.add(mid);
     } else {
-      w.add(at(box(0.024, 0.42, 0.008, MAT.steel), 0, 0.26, 0), at(box(0.1, 0.018, 0.024, M.trim), 0, 0.05, 0), at(sphere(0.018, M.trim), 0, -0.02, 0));
+      fig.add(lathe(o.belly ? 'rdhotiB' : 'rdhoti2', [[0, 0.12], [0.1 * bulk, 0.12], [0.118 * bulk, 0.18], [0.11 * bulk, 0.28], [0.1 * bulk, 0.35], [0, 0.35]], cl, 32));
+      const hem = deco(at(torus(0.1 * bulk, 0.007, M.border), 0, 0.125, 0)); hem.rotation.x = Math.PI / 2; fig.add(hem);
+      fig.add(at(box(0.012, 0.2, 0.05, cl2), 0.105 * bulk, 0.22, 0));             // front pleat fall
     }
+    // torso: chest, shoulders, belly
+    const torsoMat = o.gown ? o.blouse || cl : skin;
+    fig.add(lathe(o.belly ? 'rtorsoB2' : 'rtorso2', o.belly
+      ? [[0, 0.34], [0.11, 0.34], [0.15, 0.42], [0.13, 0.5], [0.09, 0.56], [0.05, 0.585], [0, 0.59]]
+      : [[0, 0.34], [0.074, 0.34], [0.086, 0.4], [0.098, 0.47], [0.094, 0.52], [0.06, 0.565], [0, 0.575]], torsoMat, 32));
+    if (!o.gown) for (const z of [-1, 1]) fig.add(at(sphere(0.042 * bulk, skin, 0.7, 0.7, 0.9), 0.045 * bulk, 0.49, z * 0.042 * bulk)); // chest
+    if (o.belly) fig.add(at(sphere(0.13, skin, 1, 0.9, 1), 0.05, 0.42, 0));
+    for (const z of [-1, 1]) fig.add(at(sphere(0.04 * bulk, o.armor ? M.trim : limbSkin), 0, 0.535, z * 0.1 * bulk)); // shoulders
+    if (o.armor) {
+      fig.add(at(lathe('armor', [[0, 0.4], [0.1, 0.4], [0.105, 0.47], [0.098, 0.53], [0.06, 0.57], [0, 0.575]], M.trim, 28), 0.004, 0, 0));
+      fig.add(deco(at(sphere(0.022, M.ruby, 0.5, 1, 1), 0.1, 0.48, 0)));
+    }
+    if (o.gown) {
+      // pallu draped over the left shoulder
+      fig.add(curve('pallu', [[0.08, 0.35, 0.06], [0.07, 0.46, -0.02], [0.02, 0.56, -0.09], [-0.07, 0.48, -0.1], [-0.1, 0.3, -0.08]], 0.028, cl));
+    }
+    // waist sash with a knot, sacred thread, necklaces, angavastram
+    const sash = deco(at(torus(0.1 * bulk, 0.013, cl2), 0, o.gown ? 0.34 : 0.36, 0)); sash.rotation.x = Math.PI / 2; fig.add(sash);
+    if (!o.gown) fig.add(deco(at(sphere(0.02, cl2, 1, 1.4, 1), 0.1 * bulk, 0.33, 0.03)));
+    if (o.janeu) fig.add(deco(curve('janeu', [[0.05, 0.56, -0.07], [0.09, 0.48, -0.02], [0.105, 0.4, 0.04], [0.09, 0.35, 0.08]], 0.003, M.string)));
+    const n1 = deco(at(torus(0.052, 0.006, M.trim), 0.014, 0.548, 0)); n1.rotation.set(Math.PI / 2 - 0.35, 0, 0); fig.add(n1);
+    fig.add(deco(curve('mala', [[0.03, 0.56, -0.05], [0.08, 0.49, -0.03], [0.1, 0.46, 0], [0.08, 0.49, 0.03], [0.03, 0.56, 0.05]], 0.005, o.rudraksha ? M.wood : M.pearl)));
+    fig.add(deco(at(sphere(0.013, M.ruby), 0.1, 0.455, 0)));
+    if (!o.gown && !o.armor && o.head === 'human') fig.add(curve('angav', [[-0.06, 0.57, -0.08], [0.02, 0.56, -0.1], [0.08, 0.46, -0.07], [0.1, 0.36, 0.02], [0.02, 0.26, 0.11]], 0.015, cl2));
+    if (o.cape) fig.add(at(mesh(cached('cape2', () => new THREE.CylinderGeometry(0.11, 0.2, 0.52, 24, 1, true, Math.PI * 0.55, Math.PI * 0.9)), o.cape), -0.02, 0.33, 0));
+    fig.add(at(cyl(0.028 * bulk, 0.032 * bulk, 0.05, skin), 0, 0.59, 0));        // neck
+
+    // head(s)
+    const headY = o.belly ? 0.66 : 0.65;
+    const makeHead = (sc) => (o.head === 'monkey' ? monkeyHead(M, o, sc) : o.head === 'bear' ? bearHead(M, o, sc) : humanHead(M, o, sc));
+    fig.add(at(makeHead(1), 0.004, headY, 0));
+    const crownY = headY + 0.056;
+    if (o.crown === 'mukut') fig.add(at(mukut(M, o.crownH || 1), 0, crownY, 0));
+    else if (o.crown === 'tiara') fig.add(at(tiara(M), 0, crownY - 0.004, 0));
+    else if (o.crown === 'band') { const b = deco(at(torus(0.066, 0.009, M.trim), 0, crownY - 0.012, 0)); b.rotation.x = Math.PI / 2; fig.add(b); fig.add(deco(at(sphere(0.012, M.ruby), 0.066, crownY - 0.012, 0))); }
+    else if (o.crown === 'helmet') fig.add(at(lathe('helm', [[0, 0], [0.07, 0], [0.068, 0.04], [0.05, 0.08], [0.02, 0.11], [0, 0.13]], M.trim, 24), 0, crownY - 0.03, 0));
+    for (let i = 1; i < (o.heads || 1); i++) {                                  // Ravana's other nine heads
+      const side = i % 2 ? 1 : -1, k = Math.ceil(i / 2);
+      // the other heads fan out in an arc behind the main one, getting smaller
+      const sc = 0.78 - 0.04 * k, zz = side * 0.072 * k, xx = -0.03 * k * k * 0.35;
+      const hg = at(makeHead(sc), xx, headY - 0.006 * k, zz);
+      hg.rotation.y = -side * 0.18 * k;
+      fig.add(hg);
+      fig.add(at(mukut(M, 0.5), xx, headY + sc * 0.056 - 0.006 * k, zz));
+    }
+    if (o.tail) fig.add(curve(o.tail, [[-0.08, 0.26, 0], [-0.19, 0.22, 0.02], [-0.25, 0.36, 0.03], [-0.22, 0.52, 0], [-0.15, 0.6, -0.02]], 0.017, skin));
+
+    // left arm (static): upper arm, forearm, hand + armband and bracelet
+    const lsh = [0, 0.535, -0.1 * bulk], lel = [0.035, 0.43, -0.125 * bulk], lwr = [0.08, 0.36, -0.13 * bulk];
+    fig.add(limb(lsh, lel, 0.028 * bulk, limbSkin), limb(lel, lwr, 0.023 * bulk, limbSkin), at(sphere(0.025, limbSkin, 1.1, 1, 0.8), lwr[0] + 0.012, lwr[1] - 0.012, lwr[2]));
+    const lab = deco(at(torus(0.03 * bulk, 0.006, M.trim), 0.018, 0.485, -0.112 * bulk)); lab.rotation.set(0.3, 0, 0.3); fig.add(lab);
+    const lbr = deco(at(torus(0.024 * bulk, 0.005, M.trim), 0.07, 0.375, -0.13 * bulk)); lbr.rotation.set(0.2, 0, 0.9); fig.add(lbr);
+    const hand = [lwr[0] + 0.02, lwr[1] - 0.02, lwr[2]];
+    if (o.left === 'mountain') fig.add(at(mountain(M), hand[0] + 0.02, hand[1] + 0.01, hand[2] - 0.06));
+    else if (o.left === 'lotus') fig.add(at(lotus(M), hand[0], hand[1] - 0.04, hand[2]));
+    if (o.quiver) { const q = at(quiver(M), -0.075, 0.47, 0.03); q.rotation.z = 0.45; q.rotation.x = -0.2; fig.add(q); }
+
+    // right arm: pivots at the shoulder and carries the weapon (parts.arm)
+    const arm = at(new THREE.Group(), 0, 0.535, 0.1 * bulk);
+    arm.add(limb([0, 0, 0], [0.04, -0.1, 0.02], 0.028 * bulk, limbSkin), limb([0.04, -0.1, 0.02], [0.095, -0.13, 0.015], 0.023 * bulk, limbSkin));
+    arm.add(at(sphere(0.025, limbSkin, 1.1, 1, 0.8), 0.108, -0.135, 0.015));
+    const rab = deco(at(torus(0.03 * bulk, 0.006, M.trim), 0.02, -0.05, 0.012)); rab.rotation.set(-0.3, 0, 0.4); arm.add(rab);
+    const w = at(new THREE.Group(), 0.11, -0.14, 0.015);
+    const weapon = { bow, gada, club: () => club(M, o.spiked), trident, sword, lotus }[o.weapon] || sword;
+    w.add(weapon(M));
     w.rotation.z = -0.25;
     arm.add(w);
     parts.arm = arm;
@@ -516,21 +688,27 @@ if (webglOK()) {
     const pivot = at(new THREE.Group(), -0.18, 0, 0), body = at(new THREE.Group(), 0.18, 0, 0);
     pivot.add(body); root.add(pivot); parts.rear = pivot;
     const hide = M.skin.deer;
-    body.add(at(sphere(0.13, hide, 1.6, 0.9, 0.75), 0, 0.5, 0));
-    for (let i = 0; i < 7; i++) body.add(at(sphere(0.018, M.white), -0.13 + i * 0.045, 0.6 + (i % 2) * 0.02, (i % 2 ? 1 : -1) * 0.05));
-    body.add(limb([0.16, 0.54, 0], [0.26, 0.78, 0], 0.045, hide));
-    body.add(at(sphere(0.055, hide, 1.3, 0.9, 0.9), 0.3, 0.8, 0), at(sphere(0.022, M.hair), 0.37, 0.78, 0));
-    body.add(at(sphere(0.01, M.eye), 0.31, 0.82, 0.04), at(sphere(0.01, M.eye), 0.31, 0.82, -0.04));
-    for (const z of [-0.035, 0.035]) body.add(tube('ant' + z, [[0.27, 0.84, z], [0.24, 0.96, z * 1.8], [0.3, 1.05, z * 2.6], [0.2, 1.08, z * 2]], 0.008, M.trim));
+    body.add(at(sphere(0.13, hide, 1.6, 0.88, 0.72), 0, 0.5, 0));
+    body.add(at(sphere(0.1, hide, 1, 0.95, 0.8), 0.12, 0.52, 0), at(sphere(0.1, hide, 1, 0.95, 0.8), -0.13, 0.51, 0));
+    body.add(deco(at(sphere(0.09, M.white, 1.5, 0.5, 0.6), 0, 0.43, 0)));      // pale belly
+    for (let i = 0; i < 14; i++) body.add(deco(at(sphere(0.014, M.white), -0.16 + (i % 7) * 0.05, 0.6 - Math.floor(i / 7) * 0.035, (i % 2 ? 1 : -1) * (0.04 + Math.floor(i / 7) * 0.025))));
+    body.add(limb([0.16, 0.54, 0], [0.25, 0.78, 0], 0.042, hide));
+    body.add(at(sphere(0.052, hide, 1.35, 0.9, 0.85), 0.29, 0.8, 0), at(sphere(0.02, M.iris), 0.36, 0.785, 0));
+    for (const z of [-1, 1]) {
+      body.add(deco(at(sphere(0.011, M.iris), 0.31, 0.82, z * 0.038)));
+      const ear = at(sphere(0.022, hide, 0.4, 1.4, 0.8), 0.27, 0.86, z * 0.04); ear.rotation.x = z * 0.7; body.add(ear);
+      body.add(curve('ant' + z, [[0.27, 0.84, z * 0.02], [0.24, 0.95, z * 0.04], [0.29, 1.04, z * 0.06], [0.2, 1.1, z * 0.05]], 0.007, M.trim));
+      body.add(deco(curve('antb' + z, [[0.25, 0.95, z * 0.04], [0.19, 0.99, z * 0.07]], 0.005, M.trim)));
+    }
     const tail = at(new THREE.Group(), -0.21, 0.55, 0);
     tail.add(at(sphere(0.03, M.white, 1, 1.4, 1), -0.02, 0.02, 0));
     parts.tail = tail; body.add(tail);
     parts.legs = [];
     for (const [x, z] of [[0.13, 0.05], [0.13, -0.05], [-0.13, 0.05], [-0.13, -0.05]]) {
       const leg = at(new THREE.Group(), x, 0.44, z);
-      leg.add(limb([0, 0, 0], [0, -0.21, 0], 0.024, hide));
+      leg.add(limb([0, 0, 0], [0, -0.21, 0], 0.025, hide));
       const knee = at(new THREE.Group(), 0, -0.21, 0);
-      knee.add(limb([0, 0, 0], [0, -0.21, 0], 0.017, hide), at(cyl(0.02, 0.022, 0.03, M.hair), 0, -0.225, 0));
+      knee.add(limb([0, 0, 0], [0, -0.21, 0], 0.016, hide), at(cyl(0.019, 0.021, 0.03, M.hair), 0, -0.225, 0));
       leg.add(knee); leg.userData.knee = knee;
       parts.legs.push(leg); body.add(leg);
     }
@@ -540,20 +718,20 @@ if (webglOK()) {
   function buildRamayan(type, side, M) {
     const S = M.skin;
     if (side === 'w') switch (type) {
-      case 'K': return buildHero(M, { skin: S.ram, cloth: M.cloth1, face: 'human', crown: 'mukut', weapon: 'bow', left: 'quiver', s: 1.12 });            // Lord Ram
-      case 'Q': return buildHero(M, { skin: M.saree, skinArm: S.fair, faceSkin: S.fair, cloth: M.saree, cloth2: M.trim, face: 'human', hairLong: true, crown: 'tiara', gown: true, weapon: 'lotus', left: 'lotus', s: 1.02 }); // Sita
-      case 'R': return buildHero(M, { skin: S.monkey, cloth: M.cloth2, face: 'monkey', crown: 'mukut', weapon: 'gada', left: 'mountain', tail: 'hanTail', s: 1.16 }); // Hanuman
-      case 'B': return buildHero(M, { skin: S.fair, cloth: M.cloth2, face: 'human', crown: 'band', weapon: 'bow', left: 'quiver', s: 1.02 });         // Lakshmana
-      case 'N': return buildHero(M, { skin: S.bear, cloth: M.cloth2, face: 'bear', crown: 'band', weapon: 'club', belly: true, s: 1.0 });             // Jambavan
-      default: return buildHero(M, { skin: S.monkey, cloth: M.cloth2, face: 'monkey', crown: 'none', weapon: 'club', tail: 'vanTail', s: 0.84 });     // Vanara
+      case 'K': return buildHero(M, { head: 'human', skin: S.ram, cloth: M.cloth1, cloth2: M.cloth2, crown: 'mukut', crownH: 1.15, weapon: 'bow', quiver: true, tilak: true, janeu: true, longHair: true, s: 1.12 });   // Lord Ram
+      case 'Q': return buildHero(M, { head: 'human', skin: S.fair, cloth: M.saree, blouse: M.cloth2, gown: true, crown: 'tiara', bindi: true, braid: true, weapon: 'lotus', left: 'lotus', s: 1.02 });   // Sita
+      case 'R': return buildHero(M, { head: 'monkey', skin: S.monkey, cloth: M.cloth2, cloth2: M.saree, crown: 'mukut', crownH: 0.8, earrings: true, weapon: 'gada', left: 'mountain', tail: 'hanTail2', janeu: true, muscular: true, s: 1.18 });   // Hanuman
+      case 'B': return buildHero(M, { head: 'human', skin: S.fair, cloth: M.cloth2, cloth2: M.cloth1, crown: 'mukut', crownH: 0.8, weapon: 'bow', quiver: true, tilak: true, janeu: true, longHair: true, s: 1.03 });   // Lakshmana
+      case 'N': return buildHero(M, { head: 'bear', skin: S.bear, cloth: M.cloth2, cloth2: M.cloth1, crown: 'band', weapon: 'club', rudraksha: true, belly: true, s: 1.0 });   // Jambavan
+      default: return buildHero(M, { head: 'monkey', skin: S.monkey, cloth: M.cloth2, cloth2: M.cloth1, crown: 'none', earrings: false, weapon: 'club', tail: 'vanTail2', s: 0.84 });   // Vanara
     }
     switch (type) {
-      case 'K': return buildHero(M, { skin: S.ravana, cloth: M.cloth1, face: 'human', crown: 'mukut', heads: 10, weapon: 'sword', s: 1.08 });          // Ravana
-      case 'Q': return buildHero(M, { skin: M.saree, skinArm: S.fair, faceSkin: S.fair, cloth: M.saree, cloth2: M.trim, face: 'human', hairLong: true, crown: 'tiara', gown: true, weapon: 'lotus', s: 1.02 }); // Mandodari
-      case 'R': return buildHero(M, { skin: S.giant, cloth: M.cloth1, face: 'demon', crown: 'band', weapon: 'club', belly: true, s: 1.24 });          // Kumbhakarna
-      case 'B': return buildHero(M, { skin: S.ravana, cloth: M.cloth2, face: 'human', crown: 'band', weapon: 'bow', left: 'quiver', s: 1.02 });       // Indrajit
-      case 'N': return buildDeer(M);                                                                                                                 // Maricha
-      default: return buildHero(M, { skin: S.demon, cloth: M.cloth1, face: 'demon', crown: 'none', weapon: 'trident', s: 0.84 });                     // Rakshasa
+      case 'K': return buildHero(M, { head: 'human', skin: S.ravana, cloth: M.cloth1, cloth2: M.cloth2, crown: 'mukut', crownH: 1.2, heads: 10, mustache: true, armor: true, cape: M.cloth2, weapon: 'sword', s: 1.1 });   // Ravana
+      case 'Q': return buildHero(M, { head: 'human', skin: S.fair, cloth: M.saree, blouse: M.cloth2, gown: true, crown: 'tiara', bindi: true, braid: true, weapon: 'lotus', s: 1.02 });   // Mandodari
+      case 'R': return buildHero(M, { head: 'human', skin: S.giant, cloth: M.cloth1, cloth2: M.cloth2, crown: 'band', horns: true, tusks: true, wildHair: true, mustache: true, redEye: true, belly: true, weapon: 'club', spiked: true, rudraksha: true, s: 1.26 });   // Kumbhakarna
+      case 'B': return buildHero(M, { head: 'human', skin: S.ravana, cloth: M.cloth2, cloth2: M.cloth1, crown: 'helmet', armor: true, cape: M.cloth1, mustache: true, weapon: 'bow', quiver: true, s: 1.04 });   // Indrajit
+      case 'N': return buildDeer(M);   // Maricha
+      default: return buildHero(M, { head: 'human', skin: S.demon, cloth: M.cloth1, cloth2: M.cloth2, crown: 'none', horns: true, tusks: true, wildHair: true, redEye: true, earrings: false, weapon: 'trident', rudraksha: true, s: 0.84 });   // Rakshasa
     }
   }
 
@@ -857,12 +1035,18 @@ if (webglOK()) {
     const s = side === 'b' ? -1 : 1;
     return { pos: new THREE.Vector3(0, d * 0.78, d * 0.62 * s), target: new THREE.Vector3(0, -0.2, 0.35 * s) };
   }
-  function moveCamera(to, ms) {
-    camTween = { from: camera.position.clone(), fromT: controls.target.clone(), to: to.pos, toT: to.target, t0: performance.now(), ms: ms || 900 };
+  function moveCamera(to, ms, straight) {
+    camTween = { from: camera.position.clone(), fromT: controls.target.clone(), to: to.pos, toT: to.target, t0: performance.now(), ms: ms || 900, straight };
   }
   function stepCamera(now) {
     if (camTween) {
       const k = easeInOut(clamp01((now - camTween.t0) / camTween.ms));
+      if (camTween.straight) {
+        camera.position.lerpVectors(camTween.from, camTween.to, k);
+        controls.target.lerpVectors(camTween.fromT, camTween.toT, k);
+        if (k >= 1) camTween = null;
+        return;
+      }
       // swing round the board rather than cutting through it
       const a0 = Math.atan2(camTween.from.x, camTween.from.z), a1 = Math.atan2(camTween.to.x, camTween.to.z);
       let da = a1 - a0; if (da > Math.PI) da -= Math.PI * 2; if (da < -Math.PI) da += Math.PI * 2;
@@ -1107,6 +1291,72 @@ if (webglOK()) {
     return out;
   }
 
+  // ---------- close-ups ----------
+  // fly the camera to one piece, keeping the current viewing direction
+  function focusSquare(sq) {
+    const v = pieceAt(sq);
+    if (!v) return null;
+    const target = new THREE.Vector3(v.x, 0.6, v.z);
+    const dir = camera.position.clone().sub(controls.target);
+    dir.y = 0;
+    if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1);
+    dir.normalize();
+    const pos = target.clone().addScaledVector(dir, 2.4).add(new THREE.Vector3(0, 0.75, 0));
+    moveCamera({ pos, target }, 900, true);
+    return { type: v.type, side: v.side };
+  }
+  function setLookMode(on) {
+    controls.mouseButtons.LEFT = on ? THREE.MOUSE.ROTATE : null;
+    controls.touches.ONE = on ? THREE.TOUCH.ROTATE : null;
+  }
+
+  // A turntable to inspect one character up close (spin, drag, zoom).
+  function createGallery(cv) {
+    const r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: false });
+    r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    r.toneMapping = THREE.ACESFilmicToneMapping;
+    r.shadowMap.enabled = true;
+    const sc = new THREE.Scene();
+    sc.background = new THREE.Color(0x120c08);
+    sc.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture;
+    sc.environmentIntensity = 0.6;
+    sc.add(new THREE.HemisphereLight(0xfff1dc, 0x2a1a10, 0.5));
+    const key = new THREE.DirectionalLight(0xfff0dc, 2.2); key.position.set(3, 5, 4); key.castShadow = true; sc.add(key);
+    const rim = new THREE.DirectionalLight(0xffc98a, 1.2); rim.position.set(-3, 3, -4); sc.add(rim);
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48), new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 0.6 }));
+    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; sc.add(floor);
+    const cam = new THREE.PerspectiveCamera(32, 1, 0.05, 50);
+    cam.position.set(2.2, 1.4, 2.2);
+    const ctl = new OrbitControls(cam, cv);
+    ctl.target.set(0, 0.62, 0);
+    ctl.enableDamping = true; ctl.enablePan = false;
+    ctl.minDistance = 0.7; ctl.maxDistance = 5; ctl.maxPolarAngle = 1.62;
+    ctl.autoRotate = true; ctl.autoRotateSpeed = 1.6;
+    cv.addEventListener('pointerdown', () => { ctl.autoRotate = false; });
+    let piece = null, raf = 0;
+    function size() {
+      const w = cv.clientWidth, h = cv.clientHeight;
+      if (!w || !h) return;
+      r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+    }
+    function loop() { raf = requestAnimationFrame(loop); size(); ctl.update(); r.render(sc, cam); }
+    return {
+      show(type, side) {
+        if (piece) sc.remove(piece);
+        piece = buildPiece(type, side);
+        piece.rotation.y = 0;
+        sc.add(piece);
+        const h = type === 'K' || type === 'R' ? 0.72 : type === 'P' ? 0.55 : 0.65;
+        ctl.target.set(0, h, 0);
+        cam.position.set(1.9, h + 0.55, 1.9);
+        ctl.autoRotate = true;
+      },
+      start() { if (!raf) loop(); },
+      stop() { cancelAnimationFrame(raf); raf = 0; },
+      dispose() { cancelAnimationFrame(raf); raf = 0; ctl.dispose(); r.dispose(); }
+    };
+  }
+
   // ---------- public API ----------
   let lastNow = performance.now();
   function init(cv) {
@@ -1128,9 +1378,9 @@ if (webglOK()) {
     controls = new OrbitControls(camera, canvas);
     controls.enableDamping = true;
     controls.enablePan = false;
-    controls.minDistance = 7;
+    controls.minDistance = 2.2;   // close enough to see faces
     controls.maxDistance = 22;
-    controls.maxPolarAngle = 1.32;
+    controls.maxPolarAngle = 1.45;
     controls.minPolarAngle = 0.12;
     // left button/one finger is for moving pieces; rotate with right-drag or two fingers
     controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
@@ -1183,7 +1433,8 @@ if (webglOK()) {
     isAnimating: () => !!timeline,
     setHighlights: (h) => { hlState = { ...hlState, ...h }; applyHighlights(); },
     setFlipped: (f) => { if (flipped === f) return; flipped = f; moveCamera(homeCamera(f ? 'b' : 'w'), 1100); },
-    resetView: () => moveCamera(homeCamera(flipped ? 'b' : 'w'), 700),
+    resetView: () => moveCamera(homeCamera(flipped ? 'b' : 'w'), 900, true),
+    focusSquare, setLookMode, createGallery,
     rotateView: (deg) => {
       const a = Math.atan2(camera.position.x, camera.position.z) + deg * Math.PI / 180;
       const r = Math.hypot(camera.position.x, camera.position.z);

@@ -34,7 +34,17 @@
           <button type="button" id="rotLeftBtn" title="Rotate left">⟲</button>
           <button type="button" id="resetViewBtn" title="Reset view">⌂</button>
           <button type="button" id="rotRightBtn" title="Rotate right">⟳</button>
-          <span class="tip">Right-drag or two fingers to turn &amp; zoom</span>
+          <button type="button" id="lookBtn" class="wide-btn" title="Drag to turn the board instead of moving pieces">👁 Look</button>
+          <button type="button" id="galleryBtn" class="wide-btn" title="See every character up close">👥 Characters</button>
+          <span class="tip">Double-click a piece to zoom in &middot; right-drag / two fingers to turn &amp; zoom</span>
+        </div>
+        <div class="focus-card" id="focusCard" hidden>
+          <div class="fc-name" id="fcName"></div>
+          <div class="fc-desc" id="fcDesc"></div>
+          <div class="fc-actions">
+            <button type="button" id="fcGallery">🔍 Inspect</button>
+            <button type="button" id="fcBack">⌂ Back to board</button>
+          </div>
         </div>
       </div>
     </section>
@@ -147,6 +157,30 @@
       <h3>Your soldier reached the far side!</h3>
       <p class="hint">Promote to:</p>
       <div class="promo-options" id="promoOptions"></div>
+    </div>
+  </div>
+
+  <!-- character gallery: spin, drag and zoom each character -->
+  <div class="modal" id="galleryModal" hidden>
+    <div class="gallery-box">
+      <div class="gal-head">
+        <h3 id="galTitle">Characters</h3>
+        <button type="button" class="gal-close" id="galClose" aria-label="Close">&times;</button>
+      </div>
+      <div class="gal-body">
+        <div class="gal-stage">
+          <canvas id="galCanvas"></canvas>
+          <button type="button" class="gal-nav prev" id="galPrev" aria-label="Previous">‹</button>
+          <button type="button" class="gal-nav next" id="galNext" aria-label="Next">›</button>
+          <div class="gal-tip">Drag to turn &middot; scroll or pinch to zoom</div>
+        </div>
+        <div class="gal-info">
+          <div class="gal-name" id="galName"></div>
+          <div class="gal-role" id="galRole"></div>
+          <p class="gal-desc" id="galDesc"></p>
+          <div class="gal-list" id="galList"></div>
+        </div>
+      </div>
     </div>
   </div>
 
