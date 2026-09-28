@@ -43,7 +43,12 @@
     <aside class="panel" id="setupPanel">
       <div class="panel-head">
         <h2>New game</h2>
-        <p class="cast">Soldiers, horses, camels, elephants, a queen and a king &mdash; every piece fights for real.</p>
+        <p class="cast" id="cast"></p>
+        <div class="seg" id="setupPieceChoice" style="margin-top:8px">
+          <button type="button" data-v="armies" class="active">⚔ Royal Armies</button>
+          <button type="button" data-v="ramayan">🏹 Ramayan</button>
+          <button type="button" data-v="classic">♛ Classic</button>
+        </div>
       </div>
       <div class="modes" id="modes">
         <button type="button" class="mode active" data-mode="cpu"><span class="mi">🤖</span><b>Vs Computer</b><small>Easy to hard</small></button>
@@ -167,6 +172,7 @@
       <div class="seg" id="pieceStyleChoice">
         <button type="button" data-v="armies" class="active">⚔ Royal Armies</button>
         <button type="button" data-v="classic">♛ Classic</button>
+        <button type="button" data-v="ramayan">🏹 Ramayan</button>
       </div>
       <label>Board</label>
       <div class="seg" id="boardStyleChoice">

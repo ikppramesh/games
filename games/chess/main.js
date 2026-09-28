@@ -12,6 +12,10 @@
 
   const NAMES = { P: 'Soldier', N: 'Horse', B: 'Camel', R: 'Elephant', Q: 'Queen', K: 'King' };
   const CLASSIC_NAMES = { P: 'Pawn', N: 'Knight', B: 'Bishop', R: 'Rook', Q: 'Queen', K: 'King' };
+  const RAMAYAN_NAMES = {
+    w: { K: 'Lord Ram', Q: 'Sita', R: 'Hanuman', B: 'Lakshmana', N: 'Jambavan', P: 'Vanara' },
+    b: { K: 'Ravana', Q: 'Mandodari', R: 'Kumbhakarna', B: 'Indrajit', N: 'Maricha', P: 'Rakshasa' }
+  };
   const VALUES = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
 
   // ---------- saved preferences ----------
@@ -104,7 +108,23 @@
   seg('levelChoice', level, (v) => { level = v; });
   const sidePick = seg('sideChoice');
   const hostSidePick = seg('hostSideChoice');
-  seg('pieceStyleChoice', prefs.pieces, (v) => { prefs.pieces = v; store.set('pieces', v); if (R.setStyle) R.setStyle({ pieces: v }); updateHUD(); });
+  function setPieces(v) {
+    prefs.pieces = v; store.set('pieces', v);
+    if (R.setStyle) R.setStyle({ pieces: v });
+    ['pieceStyleChoice', 'setupPieceChoice'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === v)));
+    updateCast();
+    updateHUD();
+  }
+  seg('pieceStyleChoice', prefs.pieces, setPieces);
+  seg('setupPieceChoice', prefs.pieces, setPieces);
+  function updateCast() {
+    $('cast').innerHTML = prefs.pieces === 'ramayan'
+      ? '<b>Ram\'s army</b> (ivory): Lord Ram, Sita, Lakshmana, Hanuman, Jambavan and the Vanara sena &mdash; vs <b>Ravana\'s army</b> (black): Ravana, Mandodari, Indrajit, Kumbhakarna, Maricha and the Rakshasas.'
+      : prefs.pieces === 'classic'
+        ? 'A classic Staunton tournament set.'
+        : 'Soldiers, horses, camels, elephants, a queen and a king &mdash; every piece fights for real.';
+  }
+  updateCast();
   seg('boardStyleChoice', prefs.board, (v) => { prefs.board = v; store.set('board', v); if (R.setStyle) R.setStyle({ board: v }); });
   seg('hintsChoice', prefs.hints, (v) => { prefs.hints = v; store.set('hints', v); if (selected >= 0) selectSquare(selected); });
   if (!R.setStyle) { $('pieceStyleChoice').parentElement.querySelectorAll('#pieceStyleChoice, #boardStyleChoice').forEach(el => { el.style.opacity = 0.4; el.style.pointerEvents = 'none'; }); }
@@ -167,7 +187,8 @@
     startGame('cpu', side, side === 'w' ? { w: 'You', b: `Computer · ${label}` } : { w: `Computer · ${label}`, b: 'You' });
   }
   $('cpuBtn').onclick = () => startCpu(sidePick(), level);
-  $('passBtn').onclick = () => { lastSetup = { kind: 'pass' }; startGame('pass', 'w', { w: 'Ivory', b: 'Ebony' }); };
+  const passNames = () => (prefs.pieces === 'ramayan' ? { w: "Ram's army", b: "Ravana's army" } : { w: 'Ivory', b: 'Ebony' });
+  $('passBtn').onclick = () => { lastSetup = { kind: 'pass' }; startGame('pass', 'w', passNames()); };
 
   // online: host
   $('createBtn').onclick = () => {
@@ -298,7 +319,10 @@
     });
   }
 
-  function pieceName(t) { return (prefs.pieces === 'classic' ? CLASSIC_NAMES : NAMES)[t]; }
+  function pieceName(t, side) {
+    if (prefs.pieces === 'ramayan') return RAMAYAN_NAMES[side || 'w'][t];
+    return (prefs.pieces === 'classic' ? CLASSIC_NAMES : NAMES)[t];
+  }
 
   function askPromotion(side, cb) {
     const box = $('promoOptions');
@@ -306,7 +330,7 @@
     for (const t of ['Q', 'R', 'B', 'N']) {
       const b = document.createElement('button');
       b.appendChild(R.icon(t, side, 68));
-      b.appendChild(document.createTextNode(pieceName(t)));
+      b.appendChild(document.createTextNode(pieceName(t, side)));
       b.onclick = () => { $('promoModal').hidden = true; cb(t); };
       box.appendChild(b);
     }
@@ -370,7 +394,7 @@
   $('rematchBtn').onclick = () => {
     $('overModal').hidden = true;
     if (lastSetup.kind === 'cpu') startCpu(lastSetup.side, lastSetup.level);
-    else startGame('pass', 'w', { w: 'Ivory', b: 'Ebony' });
+    else startGame('pass', 'w', passNames());
   };
   $('menuBtn').onclick = () => leave();
   $('reviewBtn').onclick = () => { $('overModal').hidden = true; };
@@ -435,7 +459,7 @@
     cv.width = src.width; cv.height = src.height;
     cv.style.width = src.style.width; cv.style.height = src.style.height;
     cv.getContext('2d').drawImage(src, 0, 0);
-    cv.title = pieceName(type);
+    cv.title = pieceName(type, side);
     return cv;
   }
 
@@ -471,7 +495,7 @@
     if (over) status = over.result === '1/2-1/2' ? `Draw · ${over.reason}` : `${names[over.result === '1-0' ? 'w' : 'b']} wins · ${over.reason}`;
     else if (opponentGone) status = 'Opponent left the game';
     else if (mode === 'cpu' && turn !== mySide) status = 'Computer is thinking…';
-    else if (mode === 'pass') status = `${turn === 'w' ? 'Ivory' : 'Ebony'} to move`;
+    else if (mode === 'pass') status = `${names[turn]} to move`;
     else status = turn === mySide ? 'Your move' : `Waiting for ${names[turn]}…`;
     if (!over && st.check) status = 'Check! ' + status;
     $('turnStatus').textContent = status;

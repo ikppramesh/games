@@ -371,13 +371,201 @@ if (webglOK()) {
     return { root, parts: {} };
   }
 
+  // ---------- Ramayan set: Ram's army (white) vs Ravana's army (black) ----------
+  function ramMaterials() {
+    const std = (color, rough, extra) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: rough == null ? 0.55 : rough }, extra || {}));
+    const phys = (color) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.4, clearcoat: 0.3 });
+    const gold = std(0xe8b84a, 0.25, { metalness: 1 });
+    const bronze = std(0xb8773a, 0.3, { metalness: 1 });
+    return {
+      w: {
+        body: MAT.w.body, trim: gold, cloth: MAT.w.cloth, eye: MAT.w.eye, mane: MAT.w.mane,
+        skin: { ram: phys(0x3f6fd6), fair: phys(0xe8b890), monkey: phys(0xc9863c), face: phys(0xf0c9a0), bear: phys(0x4a3526), bearFace: phys(0x7a5a40) },
+        cloth1: std(0xf5c542, 0.7, { side: THREE.DoubleSide }),   // pitambar yellow
+        cloth2: std(0xf07f1c, 0.7, { side: THREE.DoubleSide }),   // saffron
+        saree: std(0xc8202e, 0.65, { side: THREE.DoubleSide }),
+        hair: std(0x1a120c, 0.6), wood: std(0x6b4a2a, 0.6), green: std(0x3f7d3a, 0.8), pink: std(0xff8fb8, 0.5), white: std(0xfbf6e8, 0.4)
+      },
+      b: {
+        body: MAT.b.body, trim: bronze, cloth: MAT.b.cloth, eye: MAT.b.eye, mane: MAT.b.mane,
+        skin: { ravana: phys(0x3b2418), fair: phys(0x8a6448), demon: phys(0x2a1c26), giant: phys(0x2e2019), deer: std(0xe0a82e, 0.3, { metalness: 0.6 }), face: phys(0x2a1c26) },
+        cloth1: std(0x0e0a0b, 0.6, { side: THREE.DoubleSide }),   // black
+        cloth2: std(0x4a0a12, 0.65, { side: THREE.DoubleSide }),  // blood red
+        saree: std(0x1a0d1e, 0.6, { side: THREE.DoubleSide }),
+        hair: std(0x0b0808, 0.6), wood: std(0x3b2414, 0.6), green: std(0x2f4a2a, 0.8), pink: std(0x9b2a4a, 0.5), white: std(0xf4efe0, 0.4)
+      }
+    };
+  }
+
+  // a standing figure; o = {skin, cloth, cloth2, face, crown, heads, weapon, left, gown, belly, tail, s}
+  function buildHero(M, o) {
+    const root = new THREE.Group(), fig = new THREE.Group(), parts = {};
+    root.add(fig);
+    fig.scale.setScalar(o.s || 1);
+    const skin = o.skin, cl = o.cloth || M.cloth1, cl2 = o.cloth2 || M.trim;
+    // legs (hidden under a gown, but still animated)
+    parts.legs = [];
+    for (const z of [-0.045, 0.045]) {
+      const leg = at(new THREE.Group(), 0, 0.3, z);
+      leg.add(limb([0, 0, 0], [0, -0.26, 0], o.belly ? 0.045 : 0.034, skin), at(box(0.075, 0.02, 0.045, M.trim), 0.015, -0.285, 0));
+      parts.legs.push(leg); fig.add(leg);
+    }
+    if (o.gown) fig.add(lathe('rgown', [[0, 0.01], [0.17, 0.01], [0.16, 0.05], [0.12, 0.25], [0.09, 0.45], [0.075, 0.54], [0, 0.55]], cl));
+    else fig.add(lathe('rdhoti', [[0, 0.17], [0.1, 0.17], [0.12, 0.22], [0.11, 0.3], [0.095, 0.36], [0, 0.36]], cl));
+    // torso
+    fig.add(lathe(o.belly ? 'rtorsoB' : 'rtorso', o.belly
+      ? [[0, 0.33], [0.1, 0.33], [0.14, 0.42], [0.12, 0.52], [0.07, 0.57], [0, 0.58]]
+      : [[0, 0.33], [0.08, 0.33], [0.095, 0.44], [0.09, 0.52], [0.055, 0.565], [0, 0.57]], o.gown ? cl : skin));
+    const sash = at(torus(o.belly ? 0.12 : 0.088, 0.012, cl2), 0, 0.37, 0); sash.rotation.x = Math.PI / 2; fig.add(sash);
+    const neck = at(torus(0.05, 0.01, M.trim), 0, 0.55, 0); neck.rotation.x = Math.PI / 2 - 0.25; fig.add(neck);
+    if (!o.gown) { const uttariya = at(torus(0.09, 0.012, cl), 0.005, 0.47, 0); uttariya.rotation.set(Math.PI / 2, 0.55, 0); fig.add(uttariya); }
+    // head(s)
+    const headY = 0.64;
+    const head = (y, z, s) => {
+      const g = at(new THREE.Group(), 0.005, y, z);
+      g.scale.setScalar(s);
+      g.add(sphere(0.066, o.face === 'monkey' || o.face === 'bear' ? skin : o.faceSkin || skin));
+      if (o.face === 'monkey') {
+        g.add(at(sphere(0.042, M.skin.face, 1.1, 0.8, 1.1), 0.05, -0.018, 0));
+        g.add(at(sphere(0.022, M.skin.face), 0.005, 0.005, 0.068), at(sphere(0.022, M.skin.face), 0.005, 0.005, -0.068));
+      } else if (o.face === 'bear') {
+        g.add(at(sphere(0.036, M.skin.bearFace, 1.3, 0.8, 1), 0.06, -0.02, 0), at(sphere(0.013, M.hair), 0.1, -0.014, 0));
+        g.add(at(sphere(0.022, skin), -0.01, 0.06, 0.045), at(sphere(0.022, skin), -0.01, 0.06, -0.045));
+      } else if (o.face === 'demon') {
+        const h1 = at(cone(0.014, 0.07, M.white), 0.01, 0.07, 0.035), h2 = at(cone(0.014, 0.07, M.white), 0.01, 0.07, -0.035);
+        h1.rotation.x = -0.4; h2.rotation.x = 0.4; g.add(h1, h2);
+        const f1 = at(cone(0.006, 0.02, M.white), 0.06, -0.035, 0.015), f2 = at(cone(0.006, 0.02, M.white), 0.06, -0.035, -0.015);
+        f1.rotation.z = f2.rotation.z = Math.PI; g.add(f1, f2);
+      } else {
+        g.add(at(sphere(0.07, M.hair, 0.95, 0.9, 1.02), -0.012, 0.012, 0));
+        if (o.hairLong) g.add(at(sphere(0.07, M.hair, 0.8, 1.5, 0.95), -0.035, -0.06, 0));
+        g.add(at(sphere(0.006, M.trim), 0.062, 0.022, 0)); // tilak
+      }
+      g.add(at(sphere(0.009, M.eye), 0.057, 0.008, 0.023), at(sphere(0.009, M.eye), 0.057, 0.008, -0.023));
+      return g;
+    };
+    const heads = o.heads || 1;
+    const main = head(headY, 0, 1);
+    fig.add(main);
+    for (let i = 1; i < heads; i++) {
+      const side = i % 2 ? 1 : -1, k = Math.ceil(i / 2);
+      fig.add(head(headY - 0.004 * k, side * 0.105 * k, 0.86 - 0.025 * k));
+      fig.add(at(cyl(0.045, 0.055, 0.05, M.trim, true), -0.01, headY + 0.06, side * 0.105 * k));
+    }
+    // crown
+    const cy = headY + 0.058;
+    if (o.crown === 'mukut') {
+      fig.add(at(lathe('mukut', [[0, 0], [0.066, 0], [0.07, 0.04], [0.05, 0.1], [0.035, 0.15], [0.012, 0.19], [0, 0.2]], M.trim), 0, cy, 0));
+      fig.add(at(sphere(0.018, M.saree), 0.058, cy + 0.03, 0));
+    } else if (o.crown === 'tiara') {
+      fig.add(at(cyl(0.062, 0.066, 0.03, M.trim, true), 0, cy - 0.005, 0));
+      for (let i = 0; i < 5; i++) fig.add(at(cone(0.012, 0.04, M.trim), Math.cos(i * 1.26) * 0.06, cy + 0.03, Math.sin(i * 1.26) * 0.06));
+    } else if (o.crown === 'band') {
+      const b = at(torus(0.066, 0.01, M.trim), 0, cy - 0.01, 0); b.rotation.x = Math.PI / 2; fig.add(b);
+    }
+    if (o.tail) fig.add(tube(o.tail, [[-0.08, 0.3, 0], [-0.2, 0.28, 0], [-0.25, 0.45, 0], [-0.2, 0.58, 0]], 0.016, skin));
+    // left arm (static) + what it holds
+    fig.add(limb([0, 0.52, -0.1], [0.06, 0.38, -0.14], 0.028, o.gown ? o.skinArm || skin : skin));
+    if (o.left === 'mountain') {
+      const m = group(at(cone(0.1, 0.16, M.green), 0, 0.08, 0), at(cone(0.06, 0.1, M.green), 0.05, 0.1, 0.04), at(sphere(0.02, M.pink), 0.03, 0.1, -0.05));
+      fig.add(at(m, 0.08, 0.36, -0.2));
+    } else if (o.left === 'lotus') {
+      fig.add(at(sphere(0.03, M.pink, 1, 0.7, 1), 0.08, 0.37, -0.15));
+    } else if (o.left === 'quiver') {
+      const q = at(cyl(0.025, 0.02, 0.2, M.wood), -0.07, 0.48, 0.03); q.rotation.z = 0.4; fig.add(q);
+      for (let i = 0; i < 3; i++) fig.add(at(cone(0.008, 0.03, M.white), -0.1 + i * 0.005, 0.6, 0.02 + i * 0.012));
+    }
+    // right arm pivots at the shoulder with the weapon (parts.arm)
+    const arm = at(new THREE.Group(), 0, 0.52, 0.1);
+    arm.add(limb([0, 0, 0], [0.09, -0.12, 0.01], 0.028, o.skinArm || skin));
+    const w = at(new THREE.Group(), 0.095, -0.13, 0.01);
+    if (o.weapon === 'bow') {
+      const bow = at(torus(0.24, 0.011, M.wood, Math.PI * 0.9), 0.02, 0.05, 0);
+      bow.rotation.z = Math.PI / 2 + 0.16;
+      w.add(bow, at(box(0.003, 0.46, 0.003, M.white), -0.02, 0.05, 0), at(sphere(0.016, M.trim), 0, 0, 0));
+    } else if (o.weapon === 'gada') {
+      w.add(at(cyl(0.013, 0.013, 0.34, M.trim), 0, 0.14, 0), at(sphere(0.07, M.trim), 0, 0.33, 0), at(cone(0.02, 0.05, M.trim), 0, 0.42, 0));
+    } else if (o.weapon === 'club') {
+      w.add(at(cyl(0.04, 0.018, 0.36, M.wood), 0, 0.16, 0));
+    } else if (o.weapon === 'trident') {
+      w.add(at(cyl(0.008, 0.008, 0.5, M.wood), 0, 0.2, 0));
+      for (const z of [-0.035, 0, 0.035]) w.add(at(cone(0.012, 0.07, M.trim), 0, 0.47 + (z ? 0 : 0.02), z));
+      w.add(at(box(0.012, 0.012, 0.08, M.trim), 0, 0.43, 0));
+    } else if (o.weapon === 'lotus') {
+      // a lotus on a stem, held up (the queens bless rather than fight)
+      w.add(at(cyl(0.006, 0.006, 0.16, M.green), 0, 0.06, 0));
+      for (let i = 0; i < 6; i++) {
+        const pt = at(sphere(0.028, M.pink, 0.55, 1.2, 0.55), Math.cos(i * 1.05) * 0.02, 0.17, Math.sin(i * 1.05) * 0.02);
+        pt.rotation.set(Math.sin(i * 1.05) * 0.6, 0, -Math.cos(i * 1.05) * 0.6);
+        w.add(pt);
+      }
+      w.add(at(sphere(0.014, M.trim), 0, 0.17, 0));
+    } else {
+      w.add(at(box(0.024, 0.42, 0.008, MAT.steel), 0, 0.26, 0), at(box(0.1, 0.018, 0.024, M.trim), 0, 0.05, 0), at(sphere(0.018, M.trim), 0, -0.02, 0));
+    }
+    w.rotation.z = -0.25;
+    arm.add(w);
+    parts.arm = arm;
+    fig.add(arm);
+    return { root, parts };
+  }
+
+  // Maricha, the golden deer (black knight): four legs + a rearing pivot like the horse
+  function buildDeer(M) {
+    const root = new THREE.Group(), parts = {};
+    const pivot = at(new THREE.Group(), -0.18, 0, 0), body = at(new THREE.Group(), 0.18, 0, 0);
+    pivot.add(body); root.add(pivot); parts.rear = pivot;
+    const hide = M.skin.deer;
+    body.add(at(sphere(0.13, hide, 1.6, 0.9, 0.75), 0, 0.5, 0));
+    for (let i = 0; i < 7; i++) body.add(at(sphere(0.018, M.white), -0.13 + i * 0.045, 0.6 + (i % 2) * 0.02, (i % 2 ? 1 : -1) * 0.05));
+    body.add(limb([0.16, 0.54, 0], [0.26, 0.78, 0], 0.045, hide));
+    body.add(at(sphere(0.055, hide, 1.3, 0.9, 0.9), 0.3, 0.8, 0), at(sphere(0.022, M.hair), 0.37, 0.78, 0));
+    body.add(at(sphere(0.01, M.eye), 0.31, 0.82, 0.04), at(sphere(0.01, M.eye), 0.31, 0.82, -0.04));
+    for (const z of [-0.035, 0.035]) body.add(tube('ant' + z, [[0.27, 0.84, z], [0.24, 0.96, z * 1.8], [0.3, 1.05, z * 2.6], [0.2, 1.08, z * 2]], 0.008, M.trim));
+    const tail = at(new THREE.Group(), -0.21, 0.55, 0);
+    tail.add(at(sphere(0.03, M.white, 1, 1.4, 1), -0.02, 0.02, 0));
+    parts.tail = tail; body.add(tail);
+    parts.legs = [];
+    for (const [x, z] of [[0.13, 0.05], [0.13, -0.05], [-0.13, 0.05], [-0.13, -0.05]]) {
+      const leg = at(new THREE.Group(), x, 0.44, z);
+      leg.add(limb([0, 0, 0], [0, -0.21, 0], 0.024, hide));
+      const knee = at(new THREE.Group(), 0, -0.21, 0);
+      knee.add(limb([0, 0, 0], [0, -0.21, 0], 0.017, hide), at(cyl(0.02, 0.022, 0.03, M.hair), 0, -0.225, 0));
+      leg.add(knee); leg.userData.knee = knee;
+      parts.legs.push(leg); body.add(leg);
+    }
+    return { root, parts };
+  }
+
+  function buildRamayan(type, side, M) {
+    const S = M.skin;
+    if (side === 'w') switch (type) {
+      case 'K': return buildHero(M, { skin: S.ram, cloth: M.cloth1, face: 'human', crown: 'mukut', weapon: 'bow', left: 'quiver', s: 1.12 });            // Lord Ram
+      case 'Q': return buildHero(M, { skin: M.saree, skinArm: S.fair, faceSkin: S.fair, cloth: M.saree, cloth2: M.trim, face: 'human', hairLong: true, crown: 'tiara', gown: true, weapon: 'lotus', left: 'lotus', s: 1.02 }); // Sita
+      case 'R': return buildHero(M, { skin: S.monkey, cloth: M.cloth2, face: 'monkey', crown: 'mukut', weapon: 'gada', left: 'mountain', tail: 'hanTail', s: 1.16 }); // Hanuman
+      case 'B': return buildHero(M, { skin: S.fair, cloth: M.cloth2, face: 'human', crown: 'band', weapon: 'bow', left: 'quiver', s: 1.02 });         // Lakshmana
+      case 'N': return buildHero(M, { skin: S.bear, cloth: M.cloth2, face: 'bear', crown: 'band', weapon: 'club', belly: true, s: 1.0 });             // Jambavan
+      default: return buildHero(M, { skin: S.monkey, cloth: M.cloth2, face: 'monkey', crown: 'none', weapon: 'club', tail: 'vanTail', s: 0.84 });     // Vanara
+    }
+    switch (type) {
+      case 'K': return buildHero(M, { skin: S.ravana, cloth: M.cloth1, face: 'human', crown: 'mukut', heads: 10, weapon: 'sword', s: 1.08 });          // Ravana
+      case 'Q': return buildHero(M, { skin: M.saree, skinArm: S.fair, faceSkin: S.fair, cloth: M.saree, cloth2: M.trim, face: 'human', hairLong: true, crown: 'tiara', gown: true, weapon: 'lotus', s: 1.02 }); // Mandodari
+      case 'R': return buildHero(M, { skin: S.giant, cloth: M.cloth1, face: 'demon', crown: 'band', weapon: 'club', belly: true, s: 1.24 });          // Kumbhakarna
+      case 'B': return buildHero(M, { skin: S.ravana, cloth: M.cloth2, face: 'human', crown: 'band', weapon: 'bow', left: 'quiver', s: 1.02 });       // Indrajit
+      case 'N': return buildDeer(M);                                                                                                                 // Maricha
+      default: return buildHero(M, { skin: S.demon, cloth: M.cloth1, face: 'demon', crown: 'none', weapon: 'trident', s: 0.84 });                     // Rakshasa
+    }
+  }
+
   const BUILDERS = { P: buildSoldier, N: buildHorse, B: buildCamel, R: buildElephant, Q: (M) => buildRoyal(M, false), K: (M) => buildRoyal(M, true) };
 
   function buildPiece(type, side) {
-    const M = MAT[side];
+    const ram = style.pieces === 'ramayan';
+    if (ram && !MAT.ram) MAT.ram = ramMaterials();
+    const M = ram ? MAT.ram[side] : MAT[side];
     const g = new THREE.Group();
     g.add(plinth(M));
-    const built = style.pieces === 'classic' ? buildClassic(type, M) : BUILDERS[type](M);
+    const built = style.pieces === 'classic' ? buildClassic(type, M) : ram ? buildRamayan(type, side, M) : BUILDERS[type](M);
     built.root.position.y = BASE_Y;
     built.root.scale.setScalar(style.pieces === 'classic' ? 1.12 : 1.22);
     g.add(built.root);
@@ -734,7 +922,9 @@ if (webglOK()) {
       tracks.push({ t0: t, t1: t + strike, fn: (k) => {
         const up = k < 0.6 ? easeOut(k / 0.6) : 1 - easeInOut((k - 0.6) / 0.4);
         let lunge = Math.sin(Math.PI * clamp01(k / 0.8)) * 0.18;
-        if (style.pieces === 'classic') {
+        if (style.pieces === 'ramayan') {
+          if (P.rear) { P.rear.rotation.z = k < 0.55 ? 0.7 * easeOut(k / 0.55) : 0.7 * (1 - easeOut((k - 0.55) / 0.45)); lunge = k > 0.55 ? Math.sin(Math.PI * (k - 0.55) / 0.45) * 0.2 : 0; }
+        } else if (style.pieces === 'classic') {
           lunge = k < 0.5 ? -0.1 * easeOut(k / 0.5) : lerp(-0.1, 0.3, easeOut(clamp01((k - 0.5) / 0.15))) * (1 - clamp01((k - 0.65) / 0.35));
         } else if (mover.type === 'P') { P.arm.rotation.z = -1.45 * up; }
         else if (mover.type === 'Q' || mover.type === 'K') { /* sword swing: separate track below */ }
@@ -745,13 +935,14 @@ if (webglOK()) {
         } else if (mover.type === 'B') { P.neck.rotation.z = -0.5 * up; P.neck.position.x = 0.2 + 0.1 * up; }
         mover.x = stand.x + ux * lunge; mover.z = stand.z + uz * lunge;
       } });
-      if (style.pieces !== 'classic' && (mover.type === 'Q' || mover.type === 'K')) {
+      if ((style.pieces === 'armies' && (mover.type === 'Q' || mover.type === 'K')) || (style.pieces === 'ramayan' && P.arm)) {
         // raise the sword, then bring it down hard
         tracks.push({ t0: t, t1: t + strike, fn: (k) => {
           P.arm.rotation.z = k < 0.45 ? 1.4 * easeOut(k / 0.45) : k < 0.65 ? lerp(1.4, -1.4, easeOut((k - 0.45) / 0.2)) : lerp(-1.4, 0, easeInOut((k - 0.65) / 0.35));
         } });
       }
-      events.push({ t: t + strike * 0.15, fn: () => sfx(mover.type === 'N' ? 'neigh' : mover.type === 'R' ? 'trumpet' : 'whoosh') });
+      const ramSet = style.pieces === 'ramayan';
+      events.push({ t: t + strike * 0.15, fn: () => sfx(ramSet ? 'whoosh' : mover.type === 'N' ? 'neigh' : mover.type === 'R' ? 'trumpet' : 'whoosh') });
       events.push({ t: hitAt, fn: () => {
         sfx(mover.type === 'R' ? 'crash' : mover.type === 'N' || mover.type === 'B' ? 'thud' : 'clash');
         spawn('spark', V.x, 0.55, V.z);
