@@ -590,6 +590,69 @@
   }
   requestAnimationFrame(loop);
 
+  // ---------- zoom: pinch, double-tap, drag to pan, wheel, buttons ----------
+  (function zoomInput() {
+    const pts = new Map();
+    let pinch = null, lastTap = { t: 0, x: 0, y: 0 }, moved = false;
+    const local = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const centre = () => { const r = canvas.getBoundingClientRect(); return { x: r.width / 2, y: r.height / 2 }; };
+    const sync = () => { document.getElementById('zoomOut').disabled = PokerRender.getZoom() <= 1.01; animating = true; };
+    canvas.addEventListener('pointerdown', (e) => {
+      canvas.setPointerCapture(e.pointerId);
+      pts.set(e.pointerId, local(e));
+      moved = false;
+      if (pts.size === 2) {
+        const [a, b] = [...pts.values()];
+        pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: PokerRender.getZoom() };
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!pts.has(e.pointerId)) return;
+      const prev = pts.get(e.pointerId), cur = local(e);
+      pts.set(e.pointerId, cur);
+      if (pts.size === 2 && pinch) {
+        const [a, b] = [...pts.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        PokerRender.zoomTo(pinch.z * d / pinch.d, (a.x + b.x) / 2, (a.y + b.y) / 2, true);
+        moved = true; sync();
+      } else if (pts.size === 1 && PokerRender.getZoom() > 1.01) {
+        const dx = cur.x - prev.x, dy = cur.y - prev.y;
+        if (Math.abs(dx) + Math.abs(dy) > 0.5) { PokerRender.panBy(dx, dy); moved = true; sync(); }
+      }
+    });
+    const up = (e) => {
+      if (!pts.has(e.pointerId)) return;
+      const p = pts.get(e.pointerId);
+      pts.delete(e.pointerId);
+      if (pts.size < 2) pinch = null;
+      if (moved || pts.size) return;
+      // double tap: zoom in there, or back out
+      const now = performance.now();
+      if (now - lastTap.t < 320 && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < 30) {
+        PokerRender.zoomTo(PokerRender.getZoom() > 1.05 ? 1 : 2.2, p.x, p.y);
+        lastTap.t = 0; sync();
+      } else lastTap = { t: now, x: p.x, y: p.y };
+    };
+    canvas.addEventListener('pointerup', up);
+    canvas.addEventListener('pointercancel', up);
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const p = local(e);
+      PokerRender.zoomTo(PokerRender.getZoom() * (e.deltaY < 0 ? 1.15 : 1 / 1.15), p.x, p.y);
+      sync();
+    }, { passive: false });
+    document.getElementById('zoomIn').onclick = () => { const c = centre(); PokerRender.zoomTo(PokerRender.getZoom() * 1.4, c.x, c.y); sync(); };
+    document.getElementById('zoomOut').onclick = () => { const c = centre(); PokerRender.zoomTo(PokerRender.getZoom() / 1.4, c.x, c.y); sync(); };
+    // jump straight to your own cards (and back)
+    document.getElementById('zoomMe').onclick = () => {
+      if (PokerRender.getZoom() > 1.05) { PokerRender.zoomTo(1, 0, 0); sync(); return; }
+      const r = canvas.getBoundingClientRect();
+      PokerRender.zoomCentre(1.8, r.width / 2, r.height * (r.height > r.width ? 0.8 : 0.72));
+      sync();
+    };
+    sync();
+  })();
+
   // The canvas fills its container - refit the table when that changes.
   // One observer for the page's lifetime; the resize waits until the layout
   // has settled (e.g. after opening/closing Hand Rankings) and is skipped

@@ -661,3 +661,18 @@ body.serif .topbar h1, body.serif .panel h2{font-family:Cinzel, Georgia, serif; 
 }
 .turn-timer.warn{background:rgba(239,68,68,0.18); color:#ff7a7a; border-color:rgba(239,68,68,0.55); animation:timerPulse 0.5s ease-in-out infinite alternate;}
 @keyframes timerPulse{to{transform:scale(1.08);}}
+
+/* zoom controls on the table */
+.canvas-frame{position:relative;}
+.zoom-tools{position:absolute; left:10px; top:10px; z-index:6; display:flex; flex-direction:column; gap:6px;}
+.zoom-tools button{
+  width:38px; height:38px; border-radius:11px; font-size:1.2rem; font-weight:700; line-height:1;
+  border:1px solid rgba(255,255,255,0.18); background:rgba(10,10,12,0.72); color:#fff;
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+}
+.zoom-tools button:active{transform:scale(0.94);}
+#zoomOut[disabled]{opacity:0.35;}
+@media (orientation: landscape) and (max-height: 600px){
+  .zoom-tools{top:6px; left:6px; gap:4px;}
+  .zoom-tools button{width:32px; height:32px; font-size:1rem;}
+}

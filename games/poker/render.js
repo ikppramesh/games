@@ -53,6 +53,12 @@
   let DPR = 1;          // device pixels per CSS pixel
   let RES = 1;          // device pixels per design unit (DPR * view scale)
   let VIEW = { s: 1, ox: 0, oy: 0, cw: BASE_W, ch: BASE_H };
+  // On small screens the table is scaled way down, so cards, avatars and
+  // name plates are drawn bigger relative to the table (EL = seat items,
+  // ELC = community cards; kept small enough that nothing collides).
+  let EL = 1, ELC = 1;
+  // user zoom (pinch / double-tap / buttons): scale z and offset (CSS px), eased toward the target
+  const zoom = { z: 1, ox: 0, oy: 0, tz: 1, tox: 0, toy: 0 };
   let canvasEl = null;
   let bgLayer = null;
   const sprites = new Map();
@@ -99,6 +105,9 @@
     POT_SPOT = { x: CX - 36, y: CY - 44 };
     const s = Math.min(cw / W, ch / H);
     VIEW = { s, ox: (cw - W * s) / 2, oy: (ch - H * s) / 2, cw, ch };
+    EL = Math.max(1, Math.min(portrait ? 1.6 : 1.4, 0.8 / s));
+    ELC = Math.min(EL, portrait ? 1.45 : 1.4);
+    Object.assign(zoom, { z: 1, ox: 0, oy: 0, tz: 1, tox: 0, toy: 0 });
     RES = DPR * s;
     canvasEl.width = Math.round(cw * DPR);
     canvasEl.height = Math.round(ch * DPR);
@@ -1244,6 +1253,39 @@
     return true;
   }
 
+  // ---------- zoom ----------
+  function clampZoom(z, ox, oy) {
+    z = Math.max(1, Math.min(3, z));
+    const cw = VIEW.cw, ch = VIEW.ch;
+    return { z, ox: Math.min(0, Math.max(cw * (1 - z), ox)), oy: Math.min(0, Math.max(ch * (1 - z), oy)) };
+  }
+  // zoom to z keeping the CSS point (px, py) under the finger / cursor
+  function zoomTo(z, px, py, instant) {
+    const cur = { z: zoom.tz, ox: zoom.tox, oy: zoom.toy };
+    const cx = (px - cur.ox) / cur.z, cy = (py - cur.oy) / cur.z;
+    const t = clampZoom(z, px - z * cx, py - z * cy);
+    zoom.tz = t.z; zoom.tox = t.ox; zoom.toy = t.oy;
+    if (instant) { zoom.z = t.z; zoom.ox = t.ox; zoom.oy = t.oy; }
+  }
+  // zoom to z and bring the CSS point (px, py) to the middle of the view
+  function zoomCentre(z, px, py) {
+    const cur = { z: zoom.tz, ox: zoom.tox, oy: zoom.toy };
+    const cx = (px - cur.ox) / cur.z, cy = (py - cur.oy) / cur.z;
+    const t = clampZoom(z, VIEW.cw / 2 - z * cx, VIEW.ch / 2 - z * cy);
+    zoom.tz = t.z; zoom.tox = t.ox; zoom.toy = t.oy;
+  }
+  function panBy(dx, dy) {
+    const t = clampZoom(zoom.tz, zoom.tox + dx, zoom.toy + dy);
+    zoom.tox = zoom.ox = t.ox; zoom.toy = zoom.oy = t.oy;
+  }
+  function stepZoom() {
+    const k = 0.25;
+    zoom.z += (zoom.tz - zoom.z) * k; zoom.ox += (zoom.tox - zoom.ox) * k; zoom.oy += (zoom.toy - zoom.oy) * k;
+    const moving = Math.abs(zoom.tz - zoom.z) > 0.002 || Math.abs(zoom.tox - zoom.ox) > 0.3 || Math.abs(zoom.toy - zoom.oy) > 0.3;
+    if (!moving) { zoom.z = zoom.tz; zoom.ox = zoom.tox; zoom.oy = zoom.toy; }
+    return moving;
+  }
+
   // ---------- showdown: build the winning hand in the middle of the table ----------
   // The winner's best five cards form a row where the board was: unused board
   // cards drop away, the winner's hole cards fly up from their seat, and the
@@ -1301,10 +1343,13 @@
   function draw(ctx, state, myId, seatColors, now) {
     if (state && state.room) setRoom(state.room);
     if (!bgLayer) bgLayer = buildBackground();
+    const zooming = stepZoom();
+    const z = zoom.z;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx.setTransform(z, 0, 0, z, zoom.ox * DPR, zoom.oy * DPR);
     ctx.drawImage(bgLayer, 0, 0);
-    ctx.setTransform(RES, 0, 0, RES, VIEW.ox * DPR, VIEW.oy * DPR);
+    ctx.setTransform(RES * z, 0, 0, RES * z, (z * VIEW.ox + zoom.ox) * DPR, (z * VIEW.oy + zoom.oy) * DPR);
 
     if (!state || !state.players || !state.players.length) {
       ctx.fillStyle = 'rgba(255,240,210,0.75)';
@@ -1322,7 +1367,7 @@
       anim.flying = [];
     }
 
-    let busy = false;
+    let busy = zooming;
     const n = state.players.length;
     const me = state.players.find(p => p.id === myId);
     const mySeat = me ? me.seat : 0;
@@ -1332,7 +1377,7 @@
     const pulse = 0.5 + 0.5 * Math.sin(now / 260);
 
     // community card slots (printed on the felt) + cards
-    const cw = COMMUNITY.w, ch = COMMUNITY.h, gap = COMMUNITY.gap;
+    const cw = Math.round(COMMUNITY.w * ELC), ch = Math.round(COMMUNITY.h * ELC), gap = COMMUNITY.gap;
     const startX = CX - (cw * 5 + gap * 4) / 2 + cw / 2;
     let fresh = 0;
     const plan = showdown ? showdownPlan(state) : null;
@@ -1360,7 +1405,7 @@
         if (o.src === 'board') from = { x: slotX(o.index), y: CY };
         else {
           const hs = holeCardSpot(wpos, winner && winner.id === myId, o.index);
-          from = { x: hs.x, y: hs.y }; fromScale = hs.w / cw; fromRot = hs.rot;
+          from = { x: wpos.x + (hs.x - wpos.x) * EL, y: wpos.y + (hs.y - wpos.y) * EL }; fromScale = hs.w * EL / cw; fromRot = hs.rot;
         }
         const to = { x: slotX(j), y: CY };
         const k = easeInOut(clamp01((sdT - SD.flyStart - j * SD.stagger) / SD.fly));
@@ -1439,6 +1484,8 @@
       const r = isMe ? 30 : 26;
       const out = p.folded || p.bustedOut;
       const isWinner = showdown && state.winners.some(w => w.id === p.id);
+      ctx.save();
+      ctx.translate(pos.x, pos.y); ctx.scale(EL, EL); ctx.translate(-pos.x, -pos.y);
 
       // hole cards, fanned and tucked just behind the avatar
       if (p.holeCards && p.holeCards.length && !p.bustedOut && !p.folded) {
@@ -1507,6 +1554,7 @@
       } else if (!showdown && p.lastAction && !p.bustedOut) {
         drawBadge(ctx, pos.x, plateY + 43, p.lastAction, actionStyle(p.lastAction));
       }
+      ctx.restore(); // end of the seat's EL scale
 
       if (p.seat === state.dealerSeat) {
         const dx = CX - pos.x, dy = CY - pos.y, len = Math.hypot(dx, dy) || 1;
@@ -1576,5 +1624,5 @@
     return busy;
   }
 
-  global.PokerRender = { init, resize, draw, setRoom };
+  global.PokerRender = { init, resize, draw, setRoom, zoomTo, zoomCentre, panBy, getZoom: () => zoom.tz, isSmall: () => EL > 1.01 };
 })(window);

@@ -20,6 +20,11 @@
     <div class="board-wrap">
       <div class="canvas-frame">
         <canvas id="tableCanvas" width="900" height="620"></canvas>
+        <div class="zoom-tools" id="zoomTools">
+          <button type="button" id="zoomIn" aria-label="Zoom in">＋</button>
+          <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
+          <button type="button" id="zoomMe" aria-label="Zoom to my cards" title="Zoom to my cards">🂠</button>
+        </div>
       </div>
       <div class="action-bar" id="actionBar" hidden>
         <div class="pot-row"><div class="pot-info" id="potInfo">Pot: 0</div><div class="turn-timer" id="turnTimer" hidden>⏱ 30s</div></div>
