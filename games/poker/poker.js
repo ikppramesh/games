@@ -174,6 +174,8 @@
   }
 
   function addLog(t, msg) {
+    // 'You folds' -> 'You fold' (practice mode names the human 'You')
+    msg = msg.replace(/^You (folds|checks|calls|bets|raises)\b/, (_, v) => 'You ' + v.slice(0, -1));
     t.log.push(msg);
     if (t.log.length > 60) t.log.shift();
   }

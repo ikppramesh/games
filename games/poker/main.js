@@ -257,7 +257,7 @@
   function broadcastPersonalized() {
     if (!TABLE) return;
     for (const id of PokerNet.conns.keys()) {
-      PokerNet.sendTo(id, { type: 'state', state: PK.serializeFor(TABLE, id) });
+      PokerNet.sendTo(id, { type: 'state', state: PK.serializeFor(TABLE, id), turnMsLeft: msLeft() });
     }
   }
 
@@ -290,6 +290,8 @@
   function handleGuestData(data) {
     if (data.type === 'state') {
       remoteState = data.state;
+      // re-sync the countdown from the host (clocks on different devices differ)
+      guestDeadline = data.turnMsLeft ? performance.now() + data.turnMsLeft : 0;
       if (remoteState.room && remoteState.room !== shownRoom) applyRoom(remoteState.room);
       if (remoteState.stage === 'waiting') {
         els.joinStatusMsg.textContent = `Waiting for the host to start... (${remoteState.players.length} seated)`;
@@ -342,10 +344,76 @@
     return remoteState;
   }
 
+  // ---------- 30-second turn timer ----------
+  // The authority (host / practice) owns the clock. Each new turn of a human
+  // player gets TURN_MS; when it runs out they check if they can, else fold.
+  // Guests get the time left with every state update.
+  const TURN_MS = 30000;
+  let turnKey = null, turnDeadline = 0;   // authority: which turn is running, and when it ends
+  let guestDeadline = 0, guestKey = null; // guest: local deadline from the host's "ms left"
+  function turnKeyOf(t) { return t && t.actingId && t.stage !== 'showdown' ? `${t.handNumber}|${t.actingId}|${t.log.length}` : null; }
+  function armTurnTimer() {
+    const key = turnKeyOf(TABLE);
+    if (key === turnKey) return;
+    turnKey = key;
+    const actor = key && TABLE.players.find(p => p.id === TABLE.actingId);
+    turnDeadline = actor && !actor.isBot ? performance.now() + TURN_MS : 0;
+  }
+  function msLeft() {
+    if (isAuthority()) return turnDeadline ? Math.max(0, turnDeadline - performance.now()) : 0;
+    return guestDeadline ? Math.max(0, guestDeadline - performance.now()) : 0;
+  }
+  // time's up: check if possible, otherwise fold
+  setInterval(() => {
+    if (!isAuthority() || !TABLE || !turnDeadline || performance.now() < turnDeadline) return;
+    const id = TABLE.actingId, p = TABLE.players.find(x => x.id === id);
+    turnDeadline = 0;
+    if (!p || p.isBot) return;
+    const legal = PK.legalActions(TABLE, id);
+    PK.addLog(TABLE, `⏱ ${p.name === 'You' ? 'You ran' : p.name + ' ran'} out of time.`);
+    const ok = legal && legal.canCheck ? PK.applyAction(TABLE, id, { kind: 'check' }) : PK.applyAction(TABLE, id, { kind: 'fold' });
+    if (ok) {
+      if (id === myId) closeRaiseRow();
+      hostProcessTurn();
+    }
+  }, 200);
+  // last-5-seconds tick (only on your own turn)
+  let lastTickSec = -1, tickCtx = null;
+  function tick(final) {
+    try {
+      tickCtx = tickCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = tickCtx.createOscillator(), g = tickCtx.createGain(), t = tickCtx.currentTime;
+      o.frequency.value = final ? 520 : 880; o.type = 'triangle';
+      g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      o.connect(g); g.connect(tickCtx.destination); o.start(t); o.stop(t + 0.13);
+    } catch (e) { /* no audio */ }
+  }
+  setInterval(() => {
+    const st = currentState();
+    const mine = st && st.actingId === myId && st.stage !== 'showdown';
+    const left = msLeft();
+    if (!mine || !left) { lastTickSec = -1; updateTimerLabel(); return; }
+    const sec = Math.ceil(left / 1000);
+    if (sec <= 5 && sec !== lastTickSec) { tick(sec === 1); lastTickSec = sec; }
+    updateTimerLabel();
+  }, 250);
+  function updateTimerLabel() {
+    const el = document.getElementById('turnTimer');
+    const st = currentState();
+    const left = msLeft();
+    const mine = st && st.actingId === myId && st.stage !== 'showdown' && left > 0;
+    el.hidden = !mine;
+    if (!mine) return;
+    const sec = Math.ceil(left / 1000);
+    el.textContent = `⏱ ${sec}s`;
+    el.classList.toggle('warn', sec <= 10);
+  }
+
   // host/practice: after every state mutation, check whether a bot needs to
   // act next (recursing through the whole chain), or the hand ended.
   function hostProcessTurn() {
     if (!TABLE) return;
+    armTurnTimer();
     broadcastPersonalized();
     render();
     updateHUD();
@@ -511,7 +579,9 @@
   // (dealing, chip movement, the acting player's glow) running smoothly.
   function render() {
     lastFrame = performance.now();
-    animating = PokerRender.draw(ctx, currentState(), myId, SEAT_COLORS, lastFrame);
+    const st = currentState();
+    if (st) st.turnTimer = { left: msLeft(), total: TURN_MS };
+    animating = PokerRender.draw(ctx, st, myId, SEAT_COLORS, lastFrame);
   }
 
   function loop(now) {
@@ -531,5 +601,5 @@
     resizeTimer = setTimeout(() => { if (PokerRender.resize()) render(); }, 140);
   }).observe(canvas);
 
-  window.__PK_DEBUG = { getState: currentState, getTable: () => TABLE, getMode: () => mode, getMyId: () => myId };
+  window.__PK_DEBUG = { msLeft, expireTurn: () => { if (turnDeadline) turnDeadline = performance.now() - 1; }, getState: currentState, getTable: () => TABLE, getMode: () => mode, getMyId: () => myId };
 })();

@@ -1460,6 +1460,40 @@
       if (isWinner) { glow = 'rgba(255,210,80,0.95)'; glowSize = 22; }
       else if (state.actingId === p.id) { glow = `rgba(255,224,138,${(0.55 + 0.4 * pulse).toFixed(2)})`; glowSize = 10 + 14 * pulse; busy = true; }
       drawAvatar(ctx, pos.x, pos.y, r, color, initialsOf(p.name), { glow, glowSize });
+      // countdown ring for the player on the clock
+      const tt = state.turnTimer;
+      if (state.actingId === p.id && !showdown && tt && tt.left > 0) {
+        const f = Math.max(0, Math.min(1, tt.left / tt.total));
+        const col = f > 0.5 ? '#3ddc84' : f > 0.2 ? '#f5c542' : '#ef4444';
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, r + 7, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, r + 7, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f);
+        ctx.strokeStyle = col;
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 8 * RES;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.restore();
+        // seconds badge
+        const sec = Math.ceil(tt.left / 1000);
+        const bx = pos.x + (r + 9) * 0.72, by = pos.y - (r + 9) * 0.72;
+        ctx.beginPath();
+        ctx.arc(bx, by, 10, 0, Math.PI * 2);
+        ctx.fillStyle = col;
+        ctx.fill();
+        ctx.fillStyle = f > 0.2 ? '#10130f' : '#fff';
+        ctx.font = `800 10px ${SANS}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(sec), bx, by + 0.5);
+        busy = true;
+      }
 
       const sub = p.bustedOut ? 'Out' : p.folded ? 'Folded' : p.allIn ? 'All-in' : fmt(p.chips);
       const subColor = p.bustedOut || p.folded ? '#9ca3af' : p.allIn ? '#f87171' : '#f5c451';
