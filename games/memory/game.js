@@ -1,4 +1,4 @@
-/* Memory Match with themes (Frozen, Ramayan). Flip two cards at a time and
+/* Memory Match with themes (Frozen, Ramayan, Barbie). Flip two cards at a time and
    find every pair in as few moves as you can. Three board sizes; the best
    move count is saved per theme and level. All artwork is emoji + colour -
    no character images. */
@@ -32,12 +32,23 @@
         ['🦌', 'Golden Deer'], ['🐚', 'Shankh'], ['🌉', 'Ram Setu'], ['📿', 'Mala'], ['🔥', 'Agni'], ['🌳', 'Forest'],
         ['🦅', 'Jatayu'], ['🌞', 'Surya']],
       win: 'Jai Shri Ram! Every pair is found.'
+    },
+    barbie: {
+      name: 'Barbie', icon: '💖', title: 'Barbie Memory', back: '💖',
+      bg: ['#ff5fb0', '#5a0a3c'], board: '#b0166f', back1: '#ffb3dc', back2: '#e0218a',
+      accent: '#ff69b4', accentText: '#3d0627', text: '#fff0f8', muted: '#ffc2e3',
+      pattern: 'sparkle', confetti: ['💖', '🎀', '✨', '💗', '🌸', '💄'], confettiColors: ['#ff69b4', '#ff1493', '#ffb3dc', '#e0218a', '#ffd6ec'],
+      symbols: [['👠', 'Heels'], ['👑', 'Crown'], ['🏡', 'Dream House'], ['🚗', 'Convertible'], ['💄', 'Lipstick'], ['👜', 'Handbag'],
+        ['⭐', 'Star'], ['💖', 'Heart'], ['🎀', 'Bow'], ['💅', 'Nails'], ['👗', 'Dress'], ['🕶️', 'Shades'],
+        ['🦄', 'Unicorn'], ['🛍️', 'Shopping']],
+      win: "Life in plastic, it's fantastic!"
     }
   };
-  const ORDER = ['frozen', 'ramayan'];
+  const ORDER = ['frozen', 'ramayan', 'barbie'];
   const PATTERNS = {
     snow: '<text x="20" y="27" font-size="16" text-anchor="middle" fill="rgba(255,255,255,0.07)">❄</text>',
-    lotus: '<path d="M20 30c-6-3-8-9-6-14 3 3 5 6 6 10 1-4 3-7 6-10 2 5 0 11-6 14z" fill="rgba(255,255,255,0.06)"/>'
+    lotus: '<path d="M20 30c-6-3-8-9-6-14 3 3 5 6 6 10 1-4 3-7 6-10 2 5 0 11-6 14z" fill="rgba(255,255,255,0.06)"/>',
+    sparkle: '<path d="M20 8c1 7 3 9 10 12-7 3-9 5-10 12-1-7-3-9-10-12 7-3 9-5 10-12z" fill="rgba(255,255,255,0.1)"/>'
   };
 
   const $ = (id) => document.getElementById(id);
@@ -66,6 +77,7 @@
     $('themeIcon').textContent = T.icon;
     $('themeTitle').textContent = T.title;
     document.title = T.title;
+    document.body.dataset.theme = themeId;
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === themeId));
     document.querySelectorAll('#level button').forEach(b => b.classList.toggle('active', b.dataset.v === level));
     showBest();
@@ -202,12 +214,26 @@
     for (let k = 0; k < 30; k++) {
       const i = document.createElement('i');
       i.textContent = T.confetti[k % T.confetti.length];
+      if (T.confettiColors) i.style.textShadow = `0 0 8px ${T.confettiColors[k % T.confettiColors.length]}`;
       const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 180;
       i.style.setProperty('--dx', `${Math.cos(a) * d}px`);
       i.style.setProperty('--dy', `${Math.sin(a) * d - 40}px`);
       i.style.setProperty('--rot', `${(Math.random() - 0.5) * 720}deg`);
       i.style.animationDelay = `${Math.random() * 0.15}s`;
       box.appendChild(i);
+    }
+    if (T.confettiColors) { // pink paper pieces alongside the emoji
+      for (let k = 0; k < 40; k++) {
+        const i = document.createElement('i');
+        i.className = 'paper';
+        i.style.background = T.confettiColors[k % T.confettiColors.length];
+        const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * 220;
+        i.style.setProperty('--dx', `${Math.cos(a) * d}px`);
+        i.style.setProperty('--dy', `${Math.sin(a) * d - 40}px`);
+        i.style.setProperty('--rot', `${(Math.random() - 0.5) * 1080}deg`);
+        i.style.animationDelay = `${Math.random() * 0.25}s`;
+        box.appendChild(i);
+      }
     }
     setTimeout(() => { box.innerHTML = ''; }, 1600);
   }
