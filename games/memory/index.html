@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Memory Match</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">&larr; Game Room</a>
+    <h1><span id="themeIcon">❄️</span> <span id="themeTitle">Memory Match</span></h1>
+    <span class="spacer"></span>
+  </header>
+
+  <main class="wrap">
+    <div class="themes" id="themes" role="tablist" aria-label="Choose a theme"></div>
+
+    <div class="seg" id="level" aria-label="Difficulty">
+      <button data-v="easy" type="button">Easy</button>
+      <button data-v="medium" class="active" type="button">Medium</button>
+      <button data-v="hard" type="button">Hard</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><small>Moves</small><b id="moves">0</b></div>
+      <div class="stat"><small>Pairs</small><b id="pairs">0/0</b></div>
+      <div class="stat"><small>Time</small><b id="time">0:00</b></div>
+      <div class="stat"><small>Best</small><b id="best">-</b></div>
+    </div>
+
+    <div class="status" id="status">Find the matching pairs</div>
+
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <div class="cards" id="cards"></div>
+        <div class="confetti" id="confetti"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" id="newBtn" type="button">New game</button>
+    </div>
+  </main>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="dialog">
+      <div class="big" id="ovIcon">🏆</div>
+      <h2 id="ovTitle">You did it!</h2>
+      <p id="ovText"></p>
+      <button class="btn primary" id="ovAgain" type="button">Play again</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
