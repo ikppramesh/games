@@ -1,4 +1,4 @@
-/* Memory Match with themes (Frozen, Ramayan, Barbie). Flip two cards at a time and
+/* Memory Match with themes (Frozen, Ramayan, Barbie, Batman). Flip two cards at a time and
    find every pair in as few moves as you can. Three board sizes; the best
    move count is saved per theme and level. All artwork is emoji + colour -
    no character images. */
@@ -42,13 +42,24 @@
         ['⭐', 'Star'], ['💖', 'Heart'], ['🎀', 'Bow'], ['💅', 'Nails'], ['👗', 'Dress'], ['🕶️', 'Shades'],
         ['🦄', 'Unicorn'], ['🛍️', 'Shopping']],
       win: "Life in plastic, it's fantastic!"
+    },
+    batman: {
+      name: 'Batman', icon: '🦇', title: 'Batman Memory', back: '🦇',
+      bg: ['#2b2f3a', '#05060a'], board: '#14161d', back1: '#ffd60a', back2: '#b8860b',
+      accent: '#ffd60a', accentText: '#0b0b0f', text: '#f4f4f6', muted: '#a8abb8',
+      pattern: 'bat', confetti: ['🦇', '⚡', '💥', '🌙'],
+      symbols: [['🦇', 'Bat Symbol'], ['🏎️', 'Batmobile'], ['🌃', 'Gotham'], ['🔦', 'Bat-Signal'], ['🃏', 'Joker Card'], ['🎭', 'Mask'],
+        ['🪝', 'Grapnel'], ['🌙', 'Night'], ['💣', 'Bomb'], ['🕵️', 'Detective'], ['🏙️', 'Skyline'], ['⚡', 'Flash'],
+        ['🦉', 'Owl'], ['🛡️', 'Armor']],
+      win: 'Gotham is safe tonight.'
     }
   };
-  const ORDER = ['frozen', 'ramayan', 'barbie'];
+  const ORDER = ['frozen', 'ramayan', 'barbie', 'batman'];
   const PATTERNS = {
     snow: '<text x="20" y="27" font-size="16" text-anchor="middle" fill="rgba(255,255,255,0.07)">❄</text>',
     lotus: '<path d="M20 30c-6-3-8-9-6-14 3 3 5 6 6 10 1-4 3-7 6-10 2 5 0 11-6 14z" fill="rgba(255,255,255,0.06)"/>',
-    sparkle: '<path d="M20 8c1 7 3 9 10 12-7 3-9 5-10 12-1-7-3-9-10-12 7-3 9-5 10-12z" fill="rgba(255,255,255,0.1)"/>'
+    bat: '<path d="M20 14l3 3 6-3-2 5 5 3-6 1-2 5-4-4-4 4-2-5-6-1 5-3-2-5 6 3z" fill="rgba(255,214,10,0.07)"/>',
+    sparkle:'<path d="M20 8c1 7 3 9 10 12-7 3-9 5-10 12-1-7-3-9-10-12 7-3 9-5 10-12z" fill="rgba(255,255,255,0.1)"/>'
   };
 
   const $ = (id) => document.getElementById(id);
