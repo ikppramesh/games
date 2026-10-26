@@ -136,6 +136,12 @@ body[data-theme="spiderman"] .card .back{border-color:rgba(255,255,255,0.5);}
 body[data-theme="spiderman"] .card .front{background:linear-gradient(160deg, #ffffff, #dfe6ff);}
 body[data-theme="spiderman"] .card.matched .front{background:linear-gradient(160deg, #ffe3e6, #ff6b7a);}
 
+/* Avengers: blue board, red and silver cards */
+body[data-theme="avengers"] .board{box-shadow:0 20px 50px rgba(0,0,0,0.6), 0 0 24px rgba(230,57,70,0.3), inset 0 0 0 3px rgba(255,255,255,0.14);}
+body[data-theme="avengers"] .card .back{border-color:rgba(255,255,255,0.6); color:#fff;}
+body[data-theme="avengers"] .card .front{background:linear-gradient(160deg, #ffffff, #dde3f2);}
+body[data-theme="avengers"] .card.matched .front{background:linear-gradient(160deg, #f4f6fb, #ff7480);}
+
 .controls{display:flex; gap:8px;}
 .btn{padding:8px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.25); font-weight:700; font-size:0.92rem; white-space:nowrap;}
 .btn.primary{background:var(--accent); color:var(--accent-text); border-color:transparent; box-shadow:0 4px 12px rgba(0,0,0,0.3);}

@@ -1,4 +1,4 @@
-/* Memory Match with themes (Frozen, Ramayan, Barbie, Batman, Spider-Man). Flip two cards at a time and
+/* Memory Match with themes (Frozen, Ramayan, Barbie, Batman, Spider-Man, Avengers). Flip two cards at a time and
    find every pair in as few moves as you can. Three board sizes; the best
    move count is saved per theme and level. All artwork is emoji + colour -
    no character images. */
@@ -62,13 +62,24 @@
         ['💥', 'Pow'], ['🦸', 'Hero'], ['🚕', 'Taxi'], ['🍕', 'Pizza'], ['⚡', 'Spidey Sense'], ['🧪', 'Lab'],
         ['🔴', 'Red Suit'], ['🔵', 'Blue Suit']],
       win: 'With great power comes great memory!'
+    },
+    avengers: {
+      name: 'Avengers', icon: '🛡️', title: 'Avengers Memory', back: '⭐',
+      bg: ['#24408e', '#080d24'], board: '#16224f', back1: '#e8ecf5', back2: '#b3202e',
+      accent: '#e63946', accentText: '#ffffff', text: '#f1f4ff', muted: '#aab6e2',
+      pattern: 'star', confetti: ['⭐', '⚡', '💥', '🛡️'],
+      symbols: [['🛡️', 'Shield'], ['🔨', 'Hammer'], ['⚡', 'Lightning'], ['🏹', 'Bow'], ['💎', 'Infinity Stone'], ['🤖', 'Armor'],
+        ['🕷️', 'Spider'], ['🦸', 'Hero'], ['💥', 'Smash'], ['🛸', 'Quinjet'], ['⭐', 'Star'], ['🧪', 'Gamma'],
+        ['🏙️', 'Tower'], ['🔴', 'Reactor']],
+      win: 'Avengers, assemble! Every pair is found.'
     }
   };
-  const ORDER = ['frozen', 'ramayan', 'barbie', 'batman', 'spiderman'];
+  const ORDER = ['frozen', 'ramayan', 'barbie', 'batman', 'spiderman', 'avengers'];
   const PATTERNS = {
     snow: '<text x="20" y="27" font-size="16" text-anchor="middle" fill="rgba(255,255,255,0.07)">❄</text>',
     lotus: '<path d="M20 30c-6-3-8-9-6-14 3 3 5 6 6 10 1-4 3-7 6-10 2 5 0 11-6 14z" fill="rgba(255,255,255,0.06)"/>',
     bat: '<path d="M20 14l3 3 6-3-2 5 5 3-6 1-2 5-4-4-4 4-2-5-6-1 5-3-2-5 6 3z" fill="rgba(255,214,10,0.07)"/>',
+    star: '<path d="M20 8l3.5 8 8.5.8-6.5 5.7 2 8.5-7.5-4.5-7.5 4.5 2-8.5L8 16.8l8.5-.8z" fill="rgba(255,255,255,0.07)"/>',
     web: '<g fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"><path d="M0 0L40 40M40 0L0 40M20 0V40M0 20H40"/><circle cx="20" cy="20" r="6"/><circle cx="20" cy="20" r="13"/></g>',
     sparkle: '<path d="M20 8c1 7 3 9 10 12-7 3-9 5-10 12-1-7-3-9-10-12 7-3 9-5 10-12z" fill="rgba(255,255,255,0.1)"/>'
   };
