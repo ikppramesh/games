@@ -38,14 +38,23 @@
       colors: ['#fff1d0', '#ffe0a3', '#ffcd73', '#ffb347', '#ff9f1c', '#f47c0f', '#e05e0b', '#c2410c', '#b45309', '#d4af37', '#ffd700', '#3b1d05'],
       tiers: [['🪔', 'Diya'], ['🌺', 'Lotus'], ['📿', 'Mala'], ['🐚', 'Shankh'], ['🌳', 'Forest'], ['🦌', 'Golden Deer'], ['🐒', 'Vanara'], ['🌉', 'Ram Setu'], ['🏹', 'Kodanda'], ['🛕', 'Ayodhya'], ['👑', 'Ram Rajya'], ['🌞', 'Surya']],
       pattern: 'lotus', win: 'Jai Shri Ram! You have reached Ram Rajya.'
+    },
+    avengers: {
+      name: 'Avengers', icon: '🛡️', title: 'Assemble 2048',
+      bg: ['#24408e', '#080d24'], board: '#16224f', cell: 'rgba(255,255,255,0.1)',
+      accent: '#e63946', accentText: '#fff', text: '#f1f4ff', muted: '#aab6e2',
+      colors: ['#e8ecf5', '#cfd6e6', '#9fb0d8', '#6f89cc', '#3f62b8', '#2a4797', '#e63946', '#c42431', '#9b1823', '#d4af37', '#ffd700', '#10172f'],
+      tiers: [['🛡️', 'Shield'], ['🏹', 'Bow'], ['🔨', 'Hammer'], ['⚡', 'Lightning'], ['🤖', 'Armor'], ['🧪', 'Gamma'], ['🛸', 'Quinjet'], ['🏙️', 'Tower'], ['💎', 'Infinity Stone'], ['🧤', 'Gauntlet'], ['🦸', 'Hero'], ['⭐', 'Legend']],
+      pattern: 'star', win: 'Avengers, assemble! You reached 2048.'
     }
   };
-  const ORDER = ['barbie', 'batman', 'spider', 'ramayan'];
+  const ORDER = ['barbie', 'batman', 'spider', 'ramayan', 'avengers'];
   const PATTERNS = {
     hearts: (c) => `<text x="20" y="27" font-size="16" text-anchor="middle" fill="${c}">♥</text>`,
     bats: (c) => `<path d="M20 16c-2-4-7-5-10-2 3 0 5 2 5 4-3-1-6 0-7 3 3-1 6 0 8 2 1-1 3-2 4-2s3 1 4 2c2-2 5-3 8-2-1-3-4-4-7-3 0-2 2-4 5-4-3-3-8-2-10 2z" fill="${c}"/>`,
     web: (c) => `<g stroke="${c}" stroke-width="0.8" fill="none"><path d="M0 0L40 40M40 0L0 40M20 0V40M0 20H40"/><circle cx="20" cy="20" r="7"/><circle cx="20" cy="20" r="14"/></g>`,
-    lotus: (c) => `<path d="M20 30c-6-3-8-9-6-14 3 3 5 6 6 10 1-4 3-7 6-10 2 5 0 11-6 14z" fill="${c}"/>`
+    lotus: (c) => `<path d="M20 30c-6-3-8-9-6-14 3 3 5 6 6 10 1-4 3-7 6-10 2 5 0 11-6 14z" fill="${c}"/>`,
+    star: (c) => `<path d="M20 8l3.5 8 8.5.8-6.5 5.7 2 8.5-7.5-4.5-7.5 4.5 2-8.5L8 16.8l8.5-.8z" fill="${c}"/>`
   };
 
   const $ = (id) => document.getElementById(id);
