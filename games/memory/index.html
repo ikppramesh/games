@@ -41,6 +41,7 @@
     </div>
 
     <div class="controls">
+      <button class="btn" id="dailyBtn" type="button" title="Same board for everyone, once a day">📅 Daily</button>
       <button class="btn primary" id="newBtn" type="button">New game</button>
     </div>
   </main>
@@ -50,7 +51,9 @@
       <div class="big" id="ovIcon">🏆</div>
       <h2 id="ovTitle">You did it!</h2>
       <p id="ovText"></p>
-      <button class="btn primary" id="ovAgain" type="button">Play again</button>
+      <pre class="share" id="ovShare" hidden></pre>
+      <button class="btn primary" id="ovShareBtn" type="button" hidden>Share result</button>
+      <button class="btn" id="ovAgain" type="button">Play again</button>
     </div>
   </div>
 

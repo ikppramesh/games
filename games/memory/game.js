@@ -97,6 +97,7 @@
   let open = [];            // cards currently face up and unmatched
   let moves = 0, pairsFound = 0, totalPairs = 0;
   let startedAt = 0, timer = null, locked = false, finished = false;
+  let daily = false, rand = Math.random, log = []; // log: one entry per move, true = match
 
   // ---------- theme ----------
   function applyTheme() {
@@ -119,6 +120,7 @@
   $('themes').addEventListener('click', (e) => {
     const b = e.target.closest('.theme-btn');
     if (!b || b.dataset.theme === themeId) return;
+    daily = false; syncDailyUI();
     themeId = b.dataset.theme; T = THEMES[themeId];
     store.set('theme', themeId);
     applyTheme();
@@ -127,6 +129,7 @@
   $('level').addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || b.dataset.v === level) return;
+    daily = false; syncDailyUI();
     level = b.dataset.v; store.set('level', level);
     applyTheme();
     newGame();
@@ -142,13 +145,93 @@
   // ---------- game ----------
   function shuffle(a) {
     for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(rand() * (i + 1));
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
   }
 
+  // ---------- daily challenge ----------
+  // One board per day for everyone (theme and card layout seeded by the local date), one scored attempt per day.
+  const pad = (n) => String(n).padStart(2, '0');
+  const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const dayNumber = (key) => { const [y, m, d] = key.split('-').map(Number); return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(2026, 0, 1)) / 864e5) + 1; };
+  function seededRng(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+    let a = h >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function savedResult() {
+    try { const r = JSON.parse(store.get('daily.result', 'null')); return r && r.date === dayKey(new Date()) ? r : null; } catch (e) { return null; }
+  }
+  function shareText(r) {
+    const th = THEMES[ORDER[dayNumber(r.date) % ORDER.length]];
+    const grid = r.log.map(ok => (ok ? '🟩' : '🟥'));
+    const rows = [];
+    for (let i = 0; i < grid.length; i += 8) rows.push(grid.slice(i, i + 8).join(''));
+    return `Memory Match Daily #${dayNumber(r.date)} · ${r.date}\n${th.icon} ${th.name}: ${r.moves} moves in ${fmt(r.ms)}\n${rows.join('\n')}\n🔥 Streak ${r.streak}\n${location.origin}${location.pathname}`;
+  }
+  function showDailyResult(r) {
+    $('ovIcon').textContent = THEMES[ORDER[dayNumber(r.date) % ORDER.length]].icon;
+    $('ovTitle').textContent = `Daily #${dayNumber(r.date)} complete`;
+    $('ovText').textContent = 'Come back tomorrow for a new board!';
+    $('ovShare').textContent = shareText(r);
+    $('ovShare').hidden = $('ovShareBtn').hidden = false;
+    $('ovAgain').textContent = 'Practice mode';
+    $('overlay').hidden = false;
+  }
+  function finishDaily(elapsed) {
+    let r = savedResult();
+    if (!r) {
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      let streak = 1;
+      try { const s = JSON.parse(store.get('daily.streak', 'null')); if (s && s.last === dayKey(y)) streak = s.n + 1; } catch (e) { /* ignore */ }
+      r = { date: dayKey(new Date()), moves, ms: elapsed, log: log.slice(), streak };
+      store.set('daily.result', JSON.stringify(r));
+      store.set('daily.streak', JSON.stringify({ last: r.date, n: streak }));
+    }
+    setTimeout(() => showDailyResult(r), 900);
+  }
+  function syncDailyUI() {
+    $('dailyBtn').classList.toggle('primary', daily);
+    $('newBtn').hidden = daily;
+  }
+  function setDaily(on) {
+    daily = on;
+    if (on) {
+      themeId = ORDER[dayNumber(dayKey(new Date())) % ORDER.length]; level = 'medium';
+    } else {
+      themeId = THEMES[store.get('theme')] ? store.get('theme') : 'frozen';
+      level = LEVELS[store.get('level')] ? store.get('level') : 'medium';
+    }
+    T = THEMES[themeId];
+    syncDailyUI();
+    applyTheme();
+    newGame();
+  }
+  $('dailyBtn').onclick = () => {
+    if (startedAt && !finished && !confirm(daily ? 'Leave the daily game?' : 'Switch to the daily challenge? Your current game will be lost.')) return;
+    setDaily(!daily);
+  };
+  $('ovShareBtn').onclick = async () => {
+    const text = $('ovShare').textContent, b = $('ovShareBtn');
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else { await navigator.clipboard.writeText(text); b.textContent = 'Copied!'; setTimeout(() => { b.textContent = 'Share result'; }, 1600); }
+    } catch (e) { /* share cancelled */ }
+  };
+
   function newGame() {
+    rand = daily ? seededRng('memory-' + dayKey(new Date())) : Math.random;
+    log = [];
+    $('ovShare').hidden = $('ovShareBtn').hidden = true;
+    $('ovAgain').textContent = 'Play again';
     clearInterval(timer); timer = null;
     const { cols, rows } = LEVELS[level];
     totalPairs = (cols * rows) / 2;
@@ -172,6 +255,8 @@
     $('overlay').hidden = true;
     $('status').textContent = 'Find the matching pairs';
     updateStats();
+    const r = daily && savedResult();
+    if (r) { finished = true; $('status').textContent = 'Daily done - practice or come back tomorrow'; showDailyResult(r); }
   }
 
   function updateStats() {
@@ -202,6 +287,7 @@
 
     moves++;
     const [a, b] = open;
+    log.push(a.sym === b.sym);
     if (a.sym === b.sym) {
       a.state = b.state = 'matched';
       [a, b].forEach(x => { x.el.classList.remove('flipped'); x.el.classList.add('matched'); x.el.disabled = true; });
@@ -227,6 +313,12 @@
     clearInterval(timer); timer = null;
     const elapsed = Date.now() - startedAt;
     updateStats();
+    if (daily) {
+      $('status').textContent = T.win;
+      celebrate();
+      finishDaily(elapsed);
+      return;
+    }
     const prev = Number(store.get(bestKey(), 0));
     const record = !prev || moves < prev;
     if (record) store.set(bestKey(), moves);
@@ -275,7 +367,7 @@
     if (startedAt && !finished && !confirm('Start a new game?')) return;
     newGame();
   };
-  $('ovAgain').onclick = newGame;
+  $('ovAgain').onclick = () => (daily ? setDaily(false) : newGame());
 
   applyTheme();
   newGame();

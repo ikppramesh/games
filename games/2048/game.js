@@ -68,6 +68,7 @@
   let tiles = [];       // {id, value, r, c, el, merged?, isNew?}
   let score = 0, won = false, over = false, keepPlaying = false;
   let nextId = 1, undoState = null, busy = false;
+  let daily = false, rand = Math.random, dailyDone = false;
 
   // ---------- theme ----------
   function tierIndex(v) { return Math.min(Math.log2(v) - 1, T.tiers.length - 1); }
@@ -144,8 +145,8 @@
   function spawn() {
     const e = empties();
     if (!e.length) return;
-    const i = e[Math.floor(Math.random() * e.length)];
-    const t = { id: nextId++, value: Math.random() < 0.9 ? 2 : 4, r: Math.floor(i / SIZE), c: i % SIZE };
+    const i = e[Math.floor(rand() * e.length)];
+    const t = { id: nextId++, value: rand() < 0.9 ? 2 : 4, r: Math.floor(i / SIZE), c: i % SIZE };
     tiles.push(t);
     addTileEl(t, 'new');
   }
@@ -240,6 +241,7 @@
     }
     if (!canMove()) {
       over = true;
+      if (daily) { finishDaily(); return; }
       const top = Math.max(...tiles.map(t => t.value));
       const [icon, name] = T.tiers[tierIndex(top)];
       showOverlay(icon, 'No more moves', `You reached ${name} (${top}) with ${score.toLocaleString('en-IN')} points.`, 'Try again', newGame);
@@ -264,7 +266,10 @@
       `<div class="step${i <= topI ? ' done' : ''}${i === topI ? ' top' : ''}" title="${2 ** (i + 1)} · ${name}"><span>${icon}</span><small>${2 ** (i + 1)}</small></div>`).join('');
   }
   let ovAction = null;
-  function showOverlay(icon, title, text, mainLabel, action) {
+  function showOverlay(icon, title, text, mainLabel, action, shareText) {
+    $('ovShare').hidden = $('ovShareBtn').hidden = !shareText;
+    $('ovShare').textContent = shareText || '';
+    $('ovNew').hidden = !!shareText;
     $('ovIcon').textContent = icon; $('ovTitle').textContent = title; $('ovText').textContent = text;
     $('ovMain').textContent = mainLabel; ovAction = action;
     $('overlay').hidden = false;
@@ -273,7 +278,69 @@
   $('ovMain').onclick = () => ovAction && ovAction();
   $('ovNew').onclick = newGame;
 
+  // ---------- daily challenge ----------
+  // Everyone gets the same tile spawns on a given day (seeded by the local date), one scored run per day.
+  const pad = (n) => String(n).padStart(2, '0');
+  const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const dayNumber = (key) => { const [y, m, d] = key.split('-').map(Number); return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(2026, 0, 1)) / 864e5) + 1; };
+  function seededRng(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+    let a = h >>> 0;
+    return () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function savedResult() {
+    try { const r = JSON.parse(store.get('daily.result', 'null')); return r && r.date === dayKey(new Date()) ? r : null; } catch (e) { return null; }
+  }
+  function shareText(r) {
+    const ladder = T.tiers.slice(0, 11).map((_, i) => (i <= tierIndex(r.top) ? '🟩' : '⬛')).join('');
+    return `2048 Daily #${dayNumber(r.date)} · ${r.date}\n${T.icon} ${T.name}: ${r.top} tile, ${r.score.toLocaleString('en-IN')} pts\n${ladder}\n🔥 Streak ${r.streak}\n${location.origin}${location.pathname}`;
+  }
+  function showDailyResult(r) {
+    const [icon, name] = T.tiers[tierIndex(r.top)];
+    showOverlay(icon, `Daily #${dayNumber(r.date)} complete`, `You reached ${name} (${r.top}). Come back tomorrow for a new board!`, 'Practice mode', () => setDaily(false), shareText(r));
+  }
+  function finishDaily() {
+    let r = savedResult();
+    if (!r) {
+      const top = tiles.length ? Math.max(...tiles.map(t => t.value)) : 2;
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      let streak = 1;
+      try { const s = JSON.parse(store.get('daily.streak', 'null')); if (s && s.last === dayKey(y)) streak = s.n + 1; } catch (e) { /* ignore */ }
+      r = { date: dayKey(new Date()), score, top, streak };
+      store.set('daily.result', JSON.stringify(r));
+      store.set('daily.streak', JSON.stringify({ last: r.date, n: streak }));
+    }
+    dailyDone = true;
+    showDailyResult(r);
+  }
+  function setDaily(on) {
+    daily = on;
+    $('dailyBtn').classList.toggle('primary', on);
+    $('newBtn').textContent = on ? 'End run' : 'New game';
+    $('undoBtn').hidden = on;
+    newGame();
+  }
+  $('dailyBtn').onclick = () => {
+    if (score > 0 && !over && !confirm(daily ? 'Leave the daily run?' : 'Switch to the daily challenge? Your current game will be lost.')) return;
+    setDaily(!daily);
+  };
+  $('ovShareBtn').onclick = async () => {
+    const text = $('ovShare').textContent, b = $('ovShareBtn');
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else { await navigator.clipboard.writeText(text); b.textContent = 'Copied!'; setTimeout(() => { b.textContent = 'Share result'; }, 1600); }
+    } catch (e) { /* share cancelled */ }
+  };
+
   function newGame() {
+    rand = daily ? seededRng('2048-' + dayKey(new Date())) : Math.random;
+    dailyDone = false;
     tilesEl.innerHTML = '';
     tiles = []; score = 0; won = false; over = false; keepPlaying = false; undoState = null; busy = false;
     $('undoBtn').disabled = true;
@@ -281,8 +348,15 @@
     spawn(); spawn();
     updateScore();
     renderJourney();
+    const r = daily && savedResult();
+    if (r) { over = true; dailyDone = true; showDailyResult(r); }
   }
   $('newBtn').onclick = () => {
+    if (daily) {
+      if (dailyDone) return showDailyResult(savedResult());
+      if (confirm("End today's daily run and lock in your result?")) { over = true; finishDaily(); }
+      return;
+    }
     if (score > 0 && !over && !confirm('Start a new game?')) return;
     newGame();
   };

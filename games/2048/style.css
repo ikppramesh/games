@@ -146,3 +146,7 @@ button{font-family:inherit; cursor:pointer; color:inherit;}
   .btn{padding:6px 9px; font-size:0.8rem;}
   .score b{font-size:1.1rem;}
 }
+
+/* daily challenge */
+.ov-share{margin:0 0 14px; padding:10px 12px; border-radius:12px; background:rgba(0,0,0,0.3); color:var(--text); font:inherit; font-size:0.85rem; line-height:1.5; text-align:left; white-space:pre-wrap; word-break:break-word;}
+.ov-actions{flex-wrap:wrap;}

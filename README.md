@@ -19,6 +19,8 @@ Play it live:
 | 🏠 Monopoly / Indian Business | Planned | — |
 | ❌⭕ Tic Tac Toe (Classic, Barbie, Batman, Spider-Man, Ramayan themes) | Live | [`games/tic-tac-toe/`](games/tic-tac-toe/) |
 
+**📅 Daily challenge:** 2048 and Memory Match have a *Daily* button: everyone gets the same board each day (one scored run per day), plus a streak counter and a Wordle-style shareable result card. Results are stored only in your browser's `localStorage`.
+
 ## How online play works
 
 These games are static HTML/JS/CSS — no backend server to run or pay for. Online multiplayer uses **WebRTC** (via [PeerJS](https://peerjs.com)) so two browsers connect **directly to each other**:
