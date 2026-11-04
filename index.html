@@ -139,6 +139,110 @@
     font-size:clamp(0.95rem, 1.9vh, 1.1rem); letter-spacing:0.04em; color:var(--muted);
     text-transform:uppercase; font-weight:600;
   }
+  /* ---- interactive layer ---- */
+  #bg{position:fixed; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none;}
+  h1{
+    background:linear-gradient(90deg, var(--accent), var(--accent2), var(--accent));
+    background-size:200% auto;
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent;
+    animation:shine 6s linear infinite;
+  }
+  @keyframes shine{to{background-position:200% center;}}
+  .stats{display:flex; gap:10px; justify-content:center; margin-top:14px; flex-wrap:wrap;}
+  .stat{
+    background:rgba(23,34,46,0.7); border:1px solid #223244; border-radius:999px;
+    padding:5px 14px; font-size:0.8rem; color:var(--muted);
+  }
+  .stat b{color:var(--accent); font-size:0.95rem; margin-right:4px;}
+  .toolbar{
+    width:100%; max-width:920px; display:flex; flex-direction:column; gap:12px;
+  }
+  .search-row{display:flex; gap:10px;}
+  .search-wrap{position:relative; flex:1;}
+  #search{
+    width:100%; padding:12px 44px 12px 16px; border-radius:12px;
+    background:rgba(23,34,46,0.85); border:1px solid #223244; color:var(--text);
+    font:inherit; outline:none; transition:border-color .15s, box-shadow .15s;
+  }
+  #search:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,209,197,0.18);}
+  .kbd{
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-size:0.75rem; color:var(--muted); border:1px solid #2c3f53;
+    border-radius:6px; padding:1px 7px; pointer-events:none;
+  }
+  button{font:inherit; color:inherit;}
+  #random{
+    background:linear-gradient(135deg, var(--accent), #38a89d); color:#06201d;
+    border:0; border-radius:12px; padding:0 18px; font-weight:700; cursor:pointer;
+    transition:transform .15s, box-shadow .15s; white-space:nowrap;
+  }
+  #random:hover{transform:translateY(-2px); box-shadow:0 6px 18px rgba(79,209,197,0.35);}
+  .filters{display:flex; gap:8px; flex-wrap:wrap;}
+  .filter{
+    background:rgba(23,34,46,0.85); border:1px solid #223244; border-radius:999px;
+    padding:6px 14px; cursor:pointer; font-size:0.85rem; color:var(--muted);
+    transition:all .15s;
+  }
+  .filter:hover{border-color:var(--accent); color:var(--text);}
+  .filter.active{background:rgba(79,209,197,0.15); border-color:var(--accent); color:var(--accent);}
+  #recent{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:0.82rem; color:var(--muted);}
+  #recent[hidden], .section[hidden], #empty[hidden]{display:none;}
+  .chip-link{
+    color:var(--text); text-decoration:none; background:rgba(246,173,85,0.1);
+    border:1px solid rgba(246,173,85,0.35); border-radius:999px; padding:4px 12px;
+    transition:background .15s;
+  }
+  .chip-link:hover{background:rgba(246,173,85,0.22);}
+  .section{width:100%; max-width:920px; display:flex; flex-direction:column; gap:clamp(12px, 2vh, 20px);}
+  .section .category{margin:0;}
+  .card{
+    opacity:0; transform:translateY(18px);
+    transition:opacity .5s ease, transform .2s ease, border-color .15s ease, box-shadow .2s ease;
+    will-change:transform;
+  }
+  .card.in{opacity:1; transform:none;}
+  .card.soon.in{opacity:0.55;}
+  .card.hidden{display:none;}
+  .card.live::before{
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:0;
+    background:radial-gradient(circle 160px at var(--mx,50%) var(--my,50%), rgba(79,209,197,0.22), transparent 70%);
+    transition:opacity .2s;
+  }
+  .card.live:hover{box-shadow:0 12px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(79,209,197,0.25);}
+  .card.live:hover::before{opacity:1;}
+  .card.live:hover .emoji, .card.live:hover .game-logo{transform:scale(1.15) rotate(-6deg);}
+  .emoji, .game-logo{display:inline-block; transition:transform .25s cubic-bezier(.3,1.6,.5,1);}
+  .card.spot{border-color:var(--accent2); box-shadow:0 0 0 3px rgba(246,173,85,0.5), 0 0 30px rgba(246,173,85,0.35);}
+  .card .cta{
+    margin-top:auto; padding-top:6px; font-size:0.8rem; font-weight:600; color:var(--accent);
+    opacity:0; transform:translateX(-6px); transition:all .2s;
+  }
+  .card.live:hover .cta, .card.live:focus-visible .cta{opacity:1; transform:none;}
+  .card:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .meta{display:flex; gap:6px; flex-wrap:wrap;}
+  .meta span{
+    font-size:0.68rem; color:var(--muted); background:rgba(142,160,179,0.1);
+    border-radius:6px; padding:2px 7px;
+  }
+  .fav{
+    position:absolute; user-select:none; top:12px; left:12px; z-index:2; background:none; border:0;
+    font-size:1.15rem; line-height:1; cursor:pointer; color:var(--muted);
+    transition:transform .15s, color .15s; padding:2px;
+  }
+  .fav:hover{transform:scale(1.3); color:var(--accent2);}
+  .card.is-fav .fav{color:var(--accent2);}
+  .card.live{padding-top:clamp(34px, 4vh, 42px);}
+  #empty{color:var(--muted); text-align:center; padding:30px 0;}
+  @media (prefers-reduced-motion: reduce){
+    h1{animation:none;}
+    .card, .emoji, .game-logo{transition:none;}
+  }
+  @media (max-width: 460px){
+    .meta, .card .cta{display:none;}
+    #random{padding:0 12px;}
+    .kbd{display:none;}
+  }
   footer{
     flex:0 0 auto;
     color:var(--muted);
@@ -148,49 +252,79 @@
 </style>
 </head>
 <body>
+  <canvas id="bg" aria-hidden="true"></canvas>
   <header>
     <h1>🎲 Ramesh's Game Room</h1>
     <p>Browser games you can play online with a friend &mdash; no installs, just share a link.</p>
+    <div class="stats">
+      <span class="stat"><b id="count-live">0</b>games live</span>
+      <span class="stat"><b id="count-soon">0</b>coming soon</span>
+    </div>
   </header>
 
+  <div class="toolbar">
+    <div class="search-row">
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="Search games, themes, modes…" aria-label="Search games" autocomplete="off">
+        <span class="kbd">/</span>
+      </div>
+      <button id="random" type="button">🎰 Surprise me</button>
+    </div>
+    <div class="filters" role="group" aria-label="Filter games">
+      <button class="filter active" type="button" data-filter="all" aria-pressed="true">All</button>
+      <button class="filter" type="button" data-filter="online" aria-pressed="false">🌐 Online</button>
+      <button class="filter" type="button" data-filter="computer" aria-pressed="false">🤖 Vs computer</button>
+      <button class="filter" type="button" data-filter="solo" aria-pressed="false">🧍 Solo</button>
+      <button class="filter" type="button" data-filter="fav" aria-pressed="false">★ Favourites</button>
+    </div>
+    <div id="recent" hidden>Recently played: <span id="recent-list" style="display:contents"></span></div>
+  </div>
+
+  <div class="section">
   <h2 class="category">🎲 Table &amp; Board Games</h2>
   <div class="grid">
-    <a class="card live" href="games/table-shuffleboard/index.html">
+    <a class="card live" href="games/table-shuffleboard/index.html" data-id="shuffleboard" data-icon="🧊" data-tags="online computer">
+      <span class="fav" role="button" tabindex="0" aria-label="Toggle favourite">☆</span>
       <span class="badge live">Live</span>
       <span class="emoji">🧊</span>
       <h2>Table Shuffleboard</h2>
       <p>Slide your weights down the table and knock your opponent's off the scoring zones. Play online with a room code, or vs the computer.</p>
+      <span class="cta">Play now →</span>
     </a>
 
-    <a class="card live" href="games/poker/index.html">
+    <a class="card live" href="games/poker/index.html" data-id="poker" data-icon="♠️" data-tags="online computer">
+      <span class="fav" role="button" tabindex="0" aria-label="Toggle favourite">☆</span>
       <span class="badge live">Live</span>
       <span class="emoji">♠️</span>
       <h2>Texas Hold'em Poker</h2>
       <p>Seven rooms from ₹1,000 General to the ₹10,000-crore Elite table, each with its own felt and card deck. Up to 6 players, online or vs computer. <em>Play money only &mdash; just for fun.</em></p>
     </a>
 
-    <a class="card live" href="games/snake-and-ladder/index.html">
+    <a class="card live" href="games/snake-and-ladder/index.html" data-id="snakes" data-icon="🐍" data-tags="online computer">
+      <span class="fav" role="button" tabindex="0" aria-label="Toggle favourite">☆</span>
       <span class="badge live">Live</span>
       <span class="emoji">🐍</span>
       <h2>Snakes &amp; Ladders</h2>
       <p>Climb ladders, dodge real snakes, race to 100. Five board themes &mdash; Regular, Batman, Spider-Man, Frozen, Barbie. Online or vs the computer.</p>
     </a>
 
-    <a class="card live" href="games/UNO/index.html">
+    <a class="card live" href="games/UNO/index.html" data-id="uno" data-icon="🃏" data-tags="online computer">
+      <span class="fav" role="button" tabindex="0" aria-label="Toggle favourite">☆</span>
       <span class="badge live">Live</span>
       <img class="game-logo" src="games/UNO/assets/logo.png" alt="UNO Ultimate logo">
       <h2>UNO Ultimate</h2>
       <p>Classic, Flip, No Mercy and Liar's UNO with themes and house rules. Up to 10 players online, or solo vs the computer.</p>
     </a>
 
-    <a class="card live" href="games/chess/index.html">
+    <a class="card live" href="games/chess/index.html" data-id="chess" data-icon="♞" data-tags="online computer">
+      <span class="fav" role="button" tabindex="0" aria-label="Toggle favourite">☆</span>
       <span class="badge live">Live</span>
       <span class="emoji">♞</span>
       <h2>Chess: Royal Armies</h2>
       <p>Soldiers, horses, camels, elephants, queens and kings that march, leap and battle on a 3D board. Online, vs computer, or pass &amp; play.</p>
     </a>
 
-    <div class="card soon">
+    <div class="card soon" data-tags="soon">
       <span class="badge soon">Coming soon</span>
       <span class="emoji">🏠</span>
       <h2>Monopoly / Indian Business</h2>
@@ -199,35 +333,43 @@
 
 
   </div>
+  </div>
 
+  <div class="section">
   <h2 class="category">🧩 Puzzle Games</h2>
   <div class="grid">
-    <a class="card live" href="games/2048/index.html">
+    <a class="card live" href="games/2048/index.html" data-id="2048" data-icon="🔢" data-tags="solo">
+      <span class="fav" role="button" tabindex="0" aria-label="Toggle favourite">☆</span>
       <span class="badge live">New</span>
       <span class="emoji">🔢</span>
       <h2>2048</h2>
       <p>Slide and merge tiles to reach 2048. Four themes: Barbie, Batman, Spider-Man and Ramayan. Solo, swipe or arrow keys.</p>
     </a>
 
-    <a class="card live" href="games/memory/index.html">
+    <a class="card live" href="games/memory/index.html" data-id="memory" data-icon="🧠" data-tags="solo">
+      <span class="fav" role="button" tabindex="0" aria-label="Toggle favourite">☆</span>
       <span class="badge live">New</span>
       <span class="emoji">🧠</span>
       <h2>Memory Match</h2>
       <p>Flip cards and find the pairs. Frozen and Ramayan themes, three board sizes, best moves saved. Solo.</p>
     </a>
 
-    <a class="card live" href="games/tic-tac-toe/index.html">
+    <a class="card live" href="games/tic-tac-toe/index.html" data-id="tictactoe" data-icon="❌⭕" data-tags="online computer">
+      <span class="fav" role="button" tabindex="0" aria-label="Toggle favourite">☆</span>
       <span class="badge live">New</span>
       <span class="emoji">❌⭕</span>
       <h2>Tic Tac Toe</h2>
       <p>Classic, Barbie, Batman, Spider-Man and Ramayan themes. Vs computer (easy to unbeatable), pass &amp; play, or online with a friend.</p>
     </a>
   </div>
+  </div>
 
+  <p id="empty" hidden>No games match your search. Try another word or filter.</p>
 
   <footer>
     More games are added over time &mdash; check back soon.<br>
     All games are for fun: any chips or ₹ amounts are play money with no real value.
   </footer>
+  <script src="home.js"></script>
 </body>
 </html>
