@@ -21,6 +21,8 @@ Play it live:
 
 **📅 Daily challenge:** 2048 and Memory Match have a *Daily* button: everyone gets the same board each day (one scored run per day), plus a streak counter and a Wordle-style shareable result card. Results are stored only in your browser's `localStorage`.
 
+**📱 Install & play offline:** every game is a Progressive Web App. On a phone, use *Add to Home screen* (iOS) or *Install app* (Android/Chrome) to add Game Room to your home screen. Pages you've opened once keep working without a connection; online play still needs one.
+
 ## How online play works
 
 These games are static HTML/JS/CSS — no backend server to run or pay for. Online multiplayer uses **WebRTC** (via [PeerJS](https://peerjs.com)) so two browsers connect **directly to each other**:

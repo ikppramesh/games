@@ -1,0 +1,21 @@
+{
+  "name": "Ramesh's Game Room",
+  "short_name": "Game Room",
+  "description": "Browser games to play with friends. No install or account needed, and they work offline once loaded.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#111827",
+  "theme_color": "#1d4ed8",
+  "categories": ["games"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
